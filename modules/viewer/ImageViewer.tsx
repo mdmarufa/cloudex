@@ -446,7 +446,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       {/* Bottom Controls */}
       <div className="absolute bottom-0 inset-x-0 z-50 flex flex-col items-center pb-8 pt-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
          {allImages.length > 1 && (
-            <div ref={filmstripRef} className="relative flex items-center gap-3 p-3 mb-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto w-auto max-w-[calc(100%-2rem)] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth mx-4">
+            <div ref={filmstripRef} className="relative flex items-center gap-3 p-3 mb-2 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto w-auto max-w-[calc(100%-2rem)] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth mx-4">
                 {allImages.map((img) => (
                     <div key={img.id} ref={img.id === activeFile.id ? activeThumbRef : null} onClick={(e) => { e.stopPropagation(); onNavigate(img.id); }} className={`relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group ${img.id === activeFile.id ? 'opacity-100 scale-105 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20' : 'opacity-50 hover:opacity-100 hover:scale-105 hover:ring-2 hover:ring-white/20'}`}>
                         <img src={`https://picsum.photos/seed/${img.id}/100/100`} alt={img.name} className="w-full h-full object-cover transform transition-transform group-hover:scale-110" loading="lazy" />
