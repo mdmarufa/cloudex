@@ -15,30 +15,34 @@ interface ImageViewerProps {
   onNavigate: (fileId: string) => void;
 }
 
-// --- Styles for Animation ---
+// --- Simplified Linear Slide Styles ---
 const styles = `
-  .viewer-slide-enter-right { animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .viewer-slide-exit-left { animation: slideOutLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  
-  .viewer-slide-enter-left { animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-  .viewer-slide-exit-right { animation: slideOutRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  /* NEXT ANIMATION (Move Right -> Left) */
+  .slide-next-enter { animation: slideInFromRight 0.4s ease-out forwards; }
+  .slide-next-exit  { animation: slideOutToLeft 0.4s ease-out forwards; }
 
-  @keyframes slideInRight {
-    from { transform: translate3d(100%, 0, 0); opacity: 1; filter: brightness(1.1); }
-    to { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
-  }
-  @keyframes slideOutLeft {
-    from { transform: translate3d(0, 0, 0); opacity: 1; scale: 1; }
-    to { transform: translate3d(-20%, 0, 0); opacity: 0; scale: 0.95; }
+  /* PREV ANIMATION (Move Left -> Right) */
+  .slide-prev-enter { animation: slideInFromLeft 0.4s ease-out forwards; }
+  .slide-prev-exit  { animation: slideOutToRight 0.4s ease-out forwards; }
+
+  @keyframes slideInFromRight {
+    0% { transform: translate3d(100%, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
   }
 
-  @keyframes slideInLeft {
-    from { transform: translate3d(-100%, 0, 0); opacity: 1; filter: brightness(1.1); }
-    to { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
+  @keyframes slideOutToLeft {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
   }
-  @keyframes slideOutRight {
-    from { transform: translate3d(0, 0, 0); opacity: 1; scale: 1; }
-    to { transform: translate3d(20%, 0, 0); opacity: 0; scale: 0.95; }
+
+  @keyframes slideInFromLeft {
+    0% { transform: translate3d(-100%, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+
+  @keyframes slideOutToRight {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(100%, 0, 0); }
   }
 `;
 
@@ -84,9 +88,13 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
   // --- Animation State ---
-  // We keep track of the *previous* file to animate it out while the new one animates in.
+  // activeFile is the one currently supposed to be shown (Incoming)
+  // previousFile is the one being animated out (Outgoing)
   const [activeFile, setActiveFile] = useState<FileItem>(file);
   const [previousFile, setPreviousFile] = useState<FileItem | null>(null);
+  
+  // 'right' means we clicked Next (images move Left)
+  // 'left' means we clicked Prev (images move Right)
   const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -103,18 +111,22 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const hasPrev = currentIndex > 0;
 
   // --- Synchronization Effect ---
-  // When props.file changes, we trigger the transition logic
   useEffect(() => {
+    // Only trigger transition if the ID actually changed
     if (file.id !== activeFile.id) {
-        // 1. Determine direction
+        
+        // 1. Determine direction based on index comparison
         const newIndex = allImages.findIndex(f => f.id === file.id);
         const oldIndex = allImages.findIndex(f => f.id === activeFile.id);
-        const newDirection = newIndex > oldIndex ? 'right' : 'left';
+        
+        // If new index > old index, we go "Next" (direction right visually, slides left)
+        const isNext = newIndex > oldIndex; 
+        const newDirection = isNext ? 'right' : 'left';
 
         // 2. Set transition state
         setDirection(newDirection);
-        setPreviousFile(activeFile);
-        setActiveFile(file);
+        setPreviousFile(activeFile); // The current one becomes previous
+        setActiveFile(file);         // The new one becomes active
         setIsAnimating(true);
         
         // 3. Reset Zoom/Pan for the new image immediately
@@ -122,12 +134,12 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
         setRotation(0);
         setPosition({ x: 0, y: 0 });
 
-        // 4. Clear transition after animation duration
+        // 4. Clear transition after animation duration (400ms to match CSS)
         if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
         animationTimeoutRef.current = setTimeout(() => {
-            setPreviousFile(null);
+            setPreviousFile(null); // Remove the old image from DOM
             setIsAnimating(false);
-        }, 500); // Matches CSS animation duration
+        }, 400); 
     }
   }, [file, activeFile, allImages]);
 
@@ -149,7 +161,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   }, [activeFile.id]);
 
   // --- Handlers ---
-
   const handleNext = useCallback(() => {
       if (hasNext && !isAnimating) onNavigate(allImages[currentIndex + 1].id);
   }, [hasNext, isAnimating, onNavigate, allImages, currentIndex]);
@@ -195,7 +206,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
 
   // --- Swipe Logic (Mobile) ---
   const [touchStart, setTouchStart] = useState<number | null>(null);
-  
   const handleTouchStart = (e: React.TouchEvent) => {
       if (scale > 1) {
           setIsDragging(true);
@@ -204,13 +214,11 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       }
       setTouchStart(e.touches[0].clientX);
   };
-  
   const handleTouchMove = (e: React.TouchEvent) => {
       if (isDragging && scale > 1) {
           setPosition({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
       }
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
       setIsDragging(false);
       if (scale === 1 && touchStart !== null) {
@@ -222,16 +230,27 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       setTouchStart(null);
   };
 
+  /**
+   * Renders a single image layer.
+   * @param f - File Item
+   * @param isExiting - If true, this is the 'previous' image animating out.
+   */
   const renderImage = (f: FileItem, isExiting: boolean) => {
     const imageUrl = `https://picsum.photos/seed/${f.id}/1920/1080`;
     
-    // Calculate classes based on state
     let animClass = '';
+
     if (isAnimating) {
         if (direction === 'right') {
-            animClass = isExiting ? 'viewer-slide-exit-left' : 'viewer-slide-enter-right';
+            // User clicked Next: Content moves Left
+            // Enter: From Right (100% -> 0)
+            // Exit: To Left (0 -> -100%)
+            animClass = isExiting ? 'slide-next-exit' : 'slide-next-enter';
         } else {
-            animClass = isExiting ? 'viewer-slide-exit-right' : 'viewer-slide-enter-left';
+            // User clicked Prev: Content moves Right
+            // Enter: From Left (-100% -> 0)
+            // Exit: To Right (0 -> 100%)
+            animClass = isExiting ? 'slide-prev-exit' : 'slide-prev-enter';
         }
     }
 
@@ -240,14 +259,13 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
             key={f.id}
             className={`absolute inset-0 flex items-center justify-center w-full h-full pointer-events-none ${animClass}`}
             style={{ 
-                // Exiting images shouldn't block pointer events for controls (though container blocks clicks anyway)
                 zIndex: isExiting ? 0 : 1 
             }}
         >
             <img 
                 src={imageUrl} 
                 alt={f.name}
-                className="max-w-[95%] max-h-[90vh] object-contain shadow-2xl transition-transform duration-200 ease-out will-change-transform"
+                className="max-w-[95%] max-h-[90vh] object-contain shadow-2xl will-change-transform"
                 style={{
                     // Only apply zoom/pan transforms to the ACTIVE image, not the exiting one
                     transform: !isExiting 
