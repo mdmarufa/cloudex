@@ -392,7 +392,7 @@ export const SearchDrawer: React.FC<SearchDrawerProps> = ({ isOpen, onClose }) =
                     {isLoading ? (
                         /* Skeleton Loading State */
                         urlView === 'grid' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
                                 {[1,2,3,4,5,6,7,8].map(i => (
                                     <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 h-48">
                                         <Skeleton className="h-12 w-12 mb-4 rounded-lg" />
@@ -416,7 +416,7 @@ export const SearchDrawer: React.FC<SearchDrawerProps> = ({ isOpen, onClose }) =
                         )
                     ) : filteredFiles.length > 0 ? (
                         urlView === 'grid' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-20 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6 pb-20 animate-in fade-in zoom-in-95 duration-300">
                                 {filteredFiles.map(file => (
                                     <FileCard key={file.id} file={file} />
                                 ))}

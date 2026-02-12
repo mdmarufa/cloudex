@@ -324,7 +324,7 @@ export const Overview: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Files</h2>
             </div>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 min-[1440px]:grid-cols-5 2xl:grid-cols-5 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-6">
                 {Array.from({length: 10}).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden h-60">
                      <Skeleton className="w-full h-32" />
@@ -339,7 +339,7 @@ export const Overview: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 min-[1440px]:grid-cols-5 2xl:grid-cols-5 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-6">
                 {files.slice(0, 10).map(file => <FileCard key={file.id} file={file} />)}
               </div>
             )}

@@ -175,43 +175,26 @@ export const FileCard: React.FC<Props> = ({ file }) => {
       </div>
 
       {/* Bottom: Info Area */}
-      <div className="p-4 flex flex-col gap-1.5 flex-1 relative bg-white dark:bg-slate-900">
+      <div className="p-3 flex flex-col justify-between flex-1 relative bg-white dark:bg-slate-900 min-h-[85px]">
          
          {/* File Name & Icon Row */}
-         <div className="flex items-center gap-2.5 mb-1">
-             <div className={`p-1.5 rounded-lg ${theme.bg} ${theme.text}`}>
+         <div className="flex items-start gap-2 mb-2">
+             <div className={`p-1.5 rounded-lg shrink-0 ${theme.bg} ${theme.text}`}>
                  <FileIcon size={16} />
              </div>
-             <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate flex-1" title={file.name}>
+             <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight flex-1" title={file.name}>
                  {file.name}
              </h3>
          </div>
 
          {/* Metadata Row */}
-         <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-medium pl-1">
-            <div className="flex items-center gap-2">
+         <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-medium">
+            <div className="flex items-center gap-1.5">
                <span>{FORMAT_BYTES(file.size)}</span>
                <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                <span>{new Date(file.modifiedAt).toLocaleDateString()}</span>
             </div>
          </div>
-         
-         {/* Hidden Hover Action Bar (Slide up from bottom) */}
-         <div className={`absolute inset-x-0 bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-around transform transition-transform duration-200 ${isHovered ? 'translate-y-0' : 'translate-y-full'}`}>
-             <button onClick={handlePreview} className="flex flex-col items-center gap-1 text-[10px] text-slate-500 hover:text-blue-600 transition-colors">
-                <Eye size={16} />
-                <span>Preview</span>
-             </button>
-             <button className="flex flex-col items-center gap-1 text-[10px] text-slate-500 hover:text-blue-600 transition-colors">
-                <Download size={16} />
-                <span>Save</span>
-             </button>
-             <button onClick={handleDelete} className="flex flex-col items-center gap-1 text-[10px] text-slate-500 hover:text-red-600 transition-colors">
-                <Trash2 size={16} />
-                <span>Delete</span>
-             </button>
-         </div>
-
       </div>
     </div>
   );
