@@ -9,7 +9,7 @@ import { SearchDrawer } from '../dashboard/SearchDrawer';
 import { FileViewer } from '../../modules/viewer/FileViewer';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import { Bell, Check, FileText, Moon, Sun, Monitor, Menu, X, ArrowLeft, Calendar, Info, AlertTriangle, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { Bell, Check, FileText, Moon, Sun, Monitor, Menu, X, ArrowLeft, Calendar, Info, AlertTriangle, CheckCircle, AlertCircle, ExternalLink, Search } from 'lucide-react';
 import { AppDispatch } from '../../store/store';
 import { useTheme } from '../../context/ThemeContext';
 import { FileItem, Notification } from '../../types';
@@ -96,12 +96,12 @@ export const DashboardLayout: React.FC = () => {
       
       {/* --- Mobile Sidebar Overlay --- */}
       <div 
-        className={`fixed inset-0 bg-slate-900/50 z-30 md:hidden backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-slate-900/50 z-30 lg:hidden backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
       {/* --- Sidebar Container --- */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-72 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] shadow-2xl md:shadow-none`}>
+      <div className={`fixed inset-y-0 left-0 z-40 w-72 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] shadow-2xl lg:shadow-none`}>
         <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
       </div>
 
@@ -112,28 +112,38 @@ export const DashboardLayout: React.FC = () => {
         <div className="w-full z-20">
            <div className="w-full">
                {/* Mobile Header Bar */}
-               <div className="flex items-center justify-between md:hidden h-16 px-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 border-b border-slate-100 dark:border-slate-800">
+               <div className="flex items-center justify-between lg:hidden h-16 px-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 border-b border-slate-100 dark:border-slate-800">
                    <div className="flex items-center gap-3">
                        <button 
                          onClick={() => setIsMobileMenuOpen(true)}
                          className="p-2 -ml-2 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors active:scale-95"
+                         aria-label="Open Menu"
                        >
                          <Menu size={24} />
                        </button>
                        <span className="font-bold text-lg text-slate-900 dark:text-white">CloudVault</span>
                    </div>
-                   {/* Mobile Profile Avatar */}
-                   {user && <img src={user.avatar} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" alt="User" />}
+                   
+                   <div className="flex items-center gap-2">
+                        <button 
+                             onClick={() => setIsSearchDrawerOpen(true)}
+                             className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                             aria-label="Search"
+                        >
+                            <Search size={22} />
+                        </button>
+                        {user && <img src={user.avatar} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" alt="User" />}
+                   </div>
                </div>
                
-               <div className="hidden md:block">
+               <div className="hidden lg:block">
                   <Topbar onOpenSearch={() => setIsSearchDrawerOpen(true)} />
                </div>
            </div>
         </div>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto scroll-smooth">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth">
           <div className="w-full px-4 md:px-8 pb-10 pt-4 max-w-[1920px] mx-auto">
             <Outlet />
           </div>
@@ -167,7 +177,7 @@ export const DashboardLayout: React.FC = () => {
                 <div className="flex-none flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Notifications</h2>
-                        <span className="text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">Alt+N</span>
+                        <span className="hidden sm:block text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">Alt+N</span>
                         {notifications.filter(n => !n.read).length > 0 && (
                             <span className="px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-extrabold">
                                 {notifications.filter(n => !n.read).length} NEW
@@ -214,7 +224,7 @@ export const DashboardLayout: React.FC = () => {
                                             <span>{new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                     </div>
-                                    <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity -mr-2">
+                                    <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity -mr-2 hidden sm:block">
                                          <div className="p-2 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-full">
                                              <ArrowLeft size={16} className="rotate-180" />
                                          </div>
@@ -279,7 +289,7 @@ export const DashboardLayout: React.FC = () => {
                                 )}
                                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4">Actions</label>
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         {!selectedNotification.read && (
                                             <button 
                                                 onClick={() => {

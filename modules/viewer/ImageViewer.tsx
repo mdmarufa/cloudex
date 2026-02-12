@@ -5,7 +5,7 @@ import { FileItem, FileType } from '../../types';
 import { 
   X, ZoomIn, ZoomOut, Maximize, Download, ExternalLink, 
   Loader2, AlertCircle, RotateCw, ArrowLeftRight, ArrowUpDown, 
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, FileImage, Info
 } from 'lucide-react';
 import { FORMAT_BYTES } from '../../constants';
 
@@ -14,6 +14,75 @@ interface ImageViewerProps {
   onClose: () => void;
   onNavigate: (fileId: string) => void;
 }
+
+// --- Premium Control Button Component ---
+interface ControlBtnProps {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+  shortcut?: string;
+  disabled?: boolean;
+  variant?: 'default' | 'danger' | 'primary';
+  active?: boolean;
+}
+
+const ControlBtn: React.FC<ControlBtnProps> = ({ 
+  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false 
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const getBaseStyles = () => {
+    switch(variant) {
+      case 'danger': return 'hover:bg-red-500/20 text-white hover:text-red-400 border-transparent hover:border-red-500/30';
+      case 'primary': return 'bg-blue-600 hover:bg-blue-500 text-white border-transparent shadow-blue-500/20 shadow-lg';
+      default: return 'hover:bg-white/10 text-slate-200 hover:text-white border-white/5 hover:border-white/20';
+    }
+  };
+
+  const activeStyles = active ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : '';
+
+  return (
+    <div className="relative group flex items-center justify-center flex-shrink-0">
+      <button 
+        onClick={onClick}
+        disabled={disabled}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={`
+            relative p-2 sm:p-2.5 rounded-xl backdrop-blur-md border transition-all duration-300 ease-[cubic-bezier(0.25,0.4,0.25,1)]
+            disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100
+            hover:scale-110 active:scale-95
+            ${getBaseStyles()}
+            ${activeStyles}
+        `}
+        aria-label={label}
+      >
+        <Icon size={20} strokeWidth={2} />
+        {active && <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20 animate-pulse"></span>}
+      </button>
+
+      {/* Premium Tooltip */}
+      <div className={`
+          absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-1.5 
+          bg-slate-900/95 backdrop-blur-xl text-white text-xs font-medium rounded-lg 
+          shadow-xl border border-white/10 whitespace-nowrap pointer-events-none z-[60]
+          transition-all duration-200 origin-bottom
+          ${showTooltip ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'}
+      `}>
+         <div className="flex items-center gap-2">
+            <span>{label}</span>
+            {shortcut && (
+                <span className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] font-mono text-slate-300 border border-white/5">
+                    {shortcut}
+                </span>
+            )}
+         </div>
+         {/* Arrow */}
+         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+      </div>
+    </div>
+  );
+};
 
 const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) => {
   const { files } = useSelector((state: RootState) => state.dashboard);
@@ -30,11 +99,16 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   // Zoom Input State
   const [zoomInput, setZoomInput] = useState('100');
   const [isEditingZoom, setIsEditingZoom] = useState(false);
+
+  // Touch Swipe State
+  const minSwipeDistance = 50;
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const filmstripRef = useRef<HTMLDivElement>(null);
   const activeThumbRef = useRef<HTMLDivElement>(null);
+  const filmstripRef = useRef<HTMLDivElement>(null);
 
   // --- Image List Logic (Filmstrip) ---
   const allImages = useMemo(() => files.filter(f => f.type === FileType.IMAGE), [files]);
@@ -70,8 +144,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   }, [scale, isEditingZoom]);
 
   // --- Controls Actions ---
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.5, 5));
-  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.5, 0.1));
+  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 10)); // Logarithmic zoom feels better
+  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.1));
   const handleRotate = () => setRotation(prev => prev + 90);
   
   const handleReset = () => {
@@ -80,26 +154,36 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
     setPosition({ x: 0, y: 0 });
   };
 
+  // Fixed Fit Logic: Use 100% of container dimension
   const handleFitWidth = () => {
     if (!containerRef.current || !imageRef.current) return;
     const containerW = containerRef.current.clientWidth;
     const rect = imageRef.current.getBoundingClientRect();
-    const unscaledW = rect.width / scale;
-    if (unscaledW > 0) {
-        setScale((containerW * 0.9) / unscaledW); // 90% width to allow margin
-        setPosition({ x: 0, y: 0 });
-    }
+    const currentVisualWidth = rect.width;
+    
+    // Avoid division by zero
+    if (currentVisualWidth === 0) return;
+
+    // Calculate scaling factor to make visual width match container width
+    // Factor = Target / Current
+    const factor = (containerW) / currentVisualWidth;
+    
+    setScale(prev => prev * factor);
+    setPosition({ x: 0, y: 0 });
   };
 
   const handleFitHeight = () => {
     if (!containerRef.current || !imageRef.current) return;
     const containerH = containerRef.current.clientHeight;
     const rect = imageRef.current.getBoundingClientRect();
-    const unscaledH = rect.height / scale;
-    if (unscaledH > 0) {
-        setScale((containerH * 0.9) / unscaledH);
-        setPosition({ x: 0, y: 0 });
-    }
+    const currentVisualHeight = rect.height;
+
+    if (currentVisualHeight === 0) return;
+
+    const factor = (containerH) / currentVisualHeight;
+    
+    setScale(prev => prev * factor);
+    setPosition({ x: 0, y: 0 });
   };
 
   const handleNext = () => {
@@ -123,7 +207,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
           setZoomInput(Math.round(scale * 100).toString());
           return;
       }
-      val = Math.max(10, Math.min(500, val));
+      val = Math.max(10, Math.min(1000, val));
       setScale(val / 100);
       setZoomInput(val.toString());
   };
@@ -163,17 +247,16 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   // Mouse Wheel Zoom
   const handleWheel = (e: React.WheelEvent) => {
       e.stopPropagation();
-      // Detect pinch gesture (ctrlKey) or standard wheel
       if (e.ctrlKey || Math.abs(e.deltaY) > 0) {
         if (e.deltaY < 0) {
-            setScale(prev => Math.min(prev + 0.1, 5));
+            setScale(prev => Math.min(prev * 1.1, 10));
         } else {
-            setScale(prev => Math.max(prev - 0.1, 0.1));
+            setScale(prev => Math.max(prev / 1.1, 0.1));
         }
       }
   };
 
-  // --- Panning Logic ---
+  // --- Panning Logic (Mouse) ---
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
     e.preventDefault();
@@ -192,69 +275,136 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
 
   const handleMouseUp = () => setIsDragging(false);
 
+  // --- Touch Logic (Swipe & Pan) ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // If zoomed in, allow dragging (panning) via touch
+    if (scale > 1) {
+       setIsDragging(true);
+       setDragStart({ 
+           x: e.targetTouches[0].clientX - position.x, 
+           y: e.targetTouches[0].clientY - position.y 
+       });
+       return;
+    }
+
+    // If not zoomed, prepare for swipe detection
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Pan if zoomed
+    if (scale > 1 && isDragging) {
+       setPosition({
+         x: e.targetTouches[0].clientX - dragStart.x,
+         y: e.targetTouches[0].clientY - dragStart.y
+       });
+       return;
+    }
+
+    // Track swipe
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+
+    // Swipe Navigation (Only if not zoomed)
+    if (scale === 1 && touchStart !== null && touchEnd !== null) {
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe && hasNext) {
+            handleNext();
+        } else if (isRightSwipe && hasPrev) {
+            handlePrev();
+        }
+    }
+    
+    // Reset
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   // --- Image Source ---
   const imageUrl = `https://picsum.photos/seed/${file.id}/1920/1080`;
 
   return (
     <div 
-      className="relative w-full h-full flex flex-col bg-transparent select-none"
+      className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
+      // Touch Handlers
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* Background Mesh Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800/20 via-slate-900/50 to-black pointer-events-none z-0"></div>
+
       {/* Top Bar: Info & Close */}
-      <div className="absolute top-0 inset-x-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <div className="flex flex-col text-white pointer-events-auto">
-            <h3 className="text-sm font-bold truncate max-w-[200px] sm:max-w-md drop-shadow-md">{file.name}</h3>
-            <p className="text-xs text-slate-300 opacity-80">{FORMAT_BYTES(file.size)} • {new Date(file.modifiedAt).toLocaleDateString()}</p>
+      <div className="absolute top-0 inset-x-0 z-50 flex items-start justify-between p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 hover:opacity-100">
+        <div className="flex items-center gap-4 pointer-events-auto">
+             {/* File Type Icon Badge */}
+             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-lg">
+                <FileImage className="text-blue-400" size={20} />
+             </div>
+             <div className="flex flex-col text-white drop-shadow-md">
+                <h3 className="text-base font-bold truncate max-w-[200px] sm:max-w-md leading-tight">{file.name}</h3>
+                <div className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+                    <span className="bg-white/10 px-1.5 py-0.5 rounded">{FORMAT_BYTES(file.size)}</span>
+                    <span>•</span>
+                    <span>{new Date(file.modifiedAt).toLocaleDateString()}</span>
+                </div>
+            </div>
         </div>
         
         <div className="flex items-center gap-2 pointer-events-auto">
-            <button 
-                onClick={() => window.open(imageUrl, '_blank')}
-                className="p-2 rounded-full bg-black/20 hover:bg-white/20 text-white backdrop-blur-md transition-colors"
-                title="Open in New Tab"
-            >
-                <ExternalLink size={18} />
-            </button>
-            <button 
-                className="p-2 rounded-full bg-black/20 hover:bg-white/20 text-white backdrop-blur-md transition-colors"
-                title="Download File"
-            >
-                <Download size={18} />
-            </button>
-            <button 
-                onClick={onClose} 
-                className="p-2 rounded-full bg-white/10 hover:bg-red-500/80 text-white backdrop-blur-md transition-colors ml-2"
-                title="Close (Esc)"
-            >
-                <X size={20} />
-            </button>
+             <ControlBtn 
+                icon={ExternalLink} 
+                label="Open Original" 
+                onClick={() => window.open(imageUrl, '_blank')} 
+             />
+             <ControlBtn 
+                icon={Download} 
+                label="Download" 
+                onClick={() => {}} 
+             />
+             <div className="w-px h-6 bg-white/10 mx-1"></div>
+             <ControlBtn 
+                icon={X} 
+                label="Close" 
+                shortcut="Esc"
+                onClick={onClose}
+                variant="danger" 
+             />
         </div>
       </div>
 
-      {/* Navigation Arrows (Side) */}
-      <div className="absolute inset-y-0 left-4 flex items-center z-40 pointer-events-none">
+      {/* Navigation Arrows (Side) - HIDDEN ON MOBILE/TABLET */}
+      <div className="absolute inset-y-0 left-6 hidden lg:flex items-center z-40 pointer-events-none">
           {hasPrev && (
               <button 
                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                className="p-3 bg-black/30 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-lg"
-                title="Previous Image (Left Arrow)"
+                className="p-4 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-2xl border border-white/5 active:scale-95 group"
+                title="Previous"
               >
-                  <ChevronLeft size={32} />
+                  <ChevronLeft size={32} className="group-hover:-translate-x-0.5 transition-transform" />
               </button>
           )}
       </div>
-      <div className="absolute inset-y-0 right-4 flex items-center z-40 pointer-events-none">
+      <div className="absolute inset-y-0 right-6 hidden lg:flex items-center z-40 pointer-events-none">
           {hasNext && (
               <button 
                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                className="p-3 bg-black/30 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-lg"
-                title="Next Image (Right Arrow)"
+                className="p-4 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-2xl border border-white/5 active:scale-95 group"
+                title="Next"
               >
-                  <ChevronRight size={32} />
+                  <ChevronRight size={32} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
           )}
       </div>
@@ -262,21 +412,34 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       {/* Main Viewport */}
       <div 
         ref={containerRef}
-        className={`flex-1 overflow-hidden flex items-center justify-center cursor-${isDragging ? 'grabbing' : 'grab'}`}
+        className={`flex-1 overflow-hidden flex items-center justify-center cursor-${isDragging ? 'grabbing' : 'grab'} relative z-10`}
         onClick={(e) => e.stopPropagation()} 
       >
         {isLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none">
-                <Loader2 size={40} className="animate-spin mb-4 text-blue-500" />
-                <p className="text-sm font-medium animate-pulse">Loading preview...</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none z-50">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full animate-pulse opacity-20"></div>
+                    </div>
+                </div>
+                <p className="mt-4 text-sm font-medium text-slate-300 animate-pulse tracking-wide uppercase">Loading Preview</p>
             </div>
         )}
 
         {hasError ? (
-            <div className="flex flex-col items-center text-slate-400 pointer-events-none">
-                <AlertCircle size={48} className="mb-4 text-red-400" />
-                <p className="text-lg font-medium text-white">Failed to load image</p>
-                <button onClick={() => { setHasError(false); setIsLoading(true); }} className="mt-4 px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 pointer-events-auto">Retry</button>
+            <div className="flex flex-col items-center text-slate-400 pointer-events-none z-50 animate-in zoom-in-95">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-xl shadow-red-500/5">
+                    <AlertCircle size={40} className="text-red-500" />
+                </div>
+                <p className="text-xl font-bold text-white mb-2">Failed to load image</p>
+                <p className="text-sm text-slate-400 mb-6">The image data could not be retrieved.</p>
+                <button 
+                    onClick={() => { setHasError(false); setIsLoading(true); }} 
+                    className="pointer-events-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors border border-white/10"
+                >
+                    Try Again
+                </button>
             </div>
         ) : (
             <img 
@@ -285,39 +448,50 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                 alt={file.name}
                 onLoad={() => setIsLoading(false)}
                 onError={() => { setIsLoading(false); setHasError(true); }}
-                className={`max-w-none shadow-2xl transition-transform ease-out will-change-transform ${isDragging ? 'duration-0' : 'duration-300'} ${isLoading ? 'opacity-0' : 'opacity-100 animate-in fade-in zoom-in-95 duration-300'}`}
+                className={`
+                    max-w-none max-h-none 
+                    transition-transform ease-[cubic-bezier(0.25,0.4,0.25,1)] will-change-transform 
+                    ${isDragging ? 'duration-0' : 'duration-300'} 
+                    ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
+                `}
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
+                    // Initial constraints to ensure it starts reasonably sized, but we rely on scale for "Fit"
+                    // Removing strict vh/vw here to allow "Fit" logic to work purely with scale
                     maxHeight: '85vh',
                     maxWidth: '90vw',
-                    objectFit: 'contain'
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }}
                 draggable={false}
             />
         )}
       </div>
 
-      {/* Bottom Area: Gradient Overlay, Filmstrip & Controls */}
-      <div className="absolute bottom-0 inset-x-0 z-50 flex flex-col items-center pb-6 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+      {/* Bottom Area: Controls */}
+      <div className="absolute bottom-0 inset-x-0 z-50 flex flex-col items-center pb-8 pt-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
          
-         {/* Filmstrip (Thumbnails) */}
+         {/* Filmstrip */}
          {allImages.length > 1 && (
             <div 
                 ref={filmstripRef}
-                className="flex items-center gap-2 p-2 mb-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl overflow-x-auto max-w-[90vw] sm:max-w-xl pointer-events-auto custom-scrollbar scroll-smooth"
+                className="flex items-center gap-3 p-3 mb-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto max-w-[90vw] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth"
             >
                 {allImages.map((img) => (
                     <div 
                         key={img.id}
                         ref={img.id === file.id ? activeThumbRef : null}
                         onClick={(e) => { e.stopPropagation(); onNavigate(img.id); }}
-                        className={`relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer transition-all hover:opacity-100 border-2 ${img.id === file.id ? 'border-blue-500 opacity-100 scale-105 ring-2 ring-blue-500/50' : 'border-transparent opacity-50 hover:scale-105'}`}
-                        title={img.name}
+                        className={`
+                            relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group
+                            ${img.id === file.id 
+                                ? 'opacity-100 scale-105 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20' 
+                                : 'opacity-50 hover:opacity-100 hover:scale-105 hover:ring-2 hover:ring-white/20'}
+                        `}
                     >
                         <img 
                             src={`https://picsum.photos/seed/${img.id}/100/100`} 
                             alt={img.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transform transition-transform group-hover:scale-110"
                             loading="lazy"
                         />
                     </div>
@@ -325,48 +499,45 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
             </div>
          )}
 
-         {/* Toolbar Controls */}
-         <div className="flex items-center gap-1 p-1.5 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl pointer-events-auto transition-transform hover:scale-105">
-             <button onClick={handleZoomOut} className="p-2 hover:bg-white/10 rounded-full text-white disabled:opacity-50 transition-colors" disabled={scale <= 0.1} title="Zoom Out (-)">
-                 <ZoomOut size={18} />
-             </button>
-             
-             <div className="relative flex items-center justify-center w-14 group">
-                 <input 
-                    type="text"
-                    value={zoomInput}
-                    onChange={handleZoomInputChange}
-                    onFocus={() => setIsEditingZoom(true)}
-                    onBlur={commitZoomInput}
-                    onKeyDown={handleZoomInputKeyDown}
-                    className="w-full bg-transparent text-center text-xs font-mono font-bold text-slate-300 focus:text-white outline-none selection:bg-blue-500/50"
-                 />
-                 <span className="absolute right-0.5 text-[10px] text-slate-500 pointer-events-none">%</span>
+         {/* Floating Control Bar */}
+         <div className="pointer-events-auto max-w-[95vw] mx-auto">
+             <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                 
+                 {/* Section: Zoom */}
+                 <div className="flex items-center gap-1 flex-shrink-0">
+                    <ControlBtn icon={ZoomOut} label="Zoom Out" shortcut="-" onClick={handleZoomOut} disabled={scale <= 0.1} />
+                    
+                    <div className="relative group mx-1 flex-shrink-0">
+                        <input 
+                            type="text"
+                            value={zoomInput}
+                            onChange={handleZoomInputChange}
+                            onFocus={() => setIsEditingZoom(true)}
+                            onBlur={commitZoomInput}
+                            onKeyDown={handleZoomInputKeyDown}
+                            className="w-12 sm:w-16 bg-black/20 text-center text-xs font-mono font-bold text-white/90 focus:text-white rounded-lg py-2 border border-transparent focus:border-blue-500/50 outline-none transition-all focus:bg-black/40"
+                        />
+                        <span className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 pointer-events-none">%</span>
+                    </div>
+
+                    <ControlBtn icon={ZoomIn} label="Zoom In" shortcut="+" onClick={handleZoomIn} disabled={scale >= 10} />
+                 </div>
+
+                 <div className="w-px h-6 sm:h-8 bg-white/10 mx-1 flex-shrink-0"></div>
+
+                 {/* Section: Tools */}
+                 <div className="flex items-center gap-1 flex-shrink-0">
+                    <ControlBtn icon={RotateCw} label="Rotate" shortcut="R" onClick={handleRotate} />
+                    <ControlBtn icon={ArrowLeftRight} label="Fit Width" shortcut="W" onClick={handleFitWidth} />
+                    <ControlBtn icon={ArrowUpDown} label="Fit Height" shortcut="H" onClick={handleFitHeight} />
+                 </div>
+
+                 <div className="w-px h-6 sm:h-8 bg-white/10 mx-1 flex-shrink-0"></div>
+
+                 {/* Section: Reset */}
+                 <ControlBtn icon={Maximize} label="Reset View" shortcut="0" onClick={handleReset} />
+
              </div>
-
-             <button onClick={handleZoomIn} className="p-2 hover:bg-white/10 rounded-full text-white disabled:opacity-50 transition-colors" disabled={scale >= 5} title="Zoom In (+)">
-                 <ZoomIn size={18} />
-             </button>
-
-             <div className="w-px h-4 bg-white/20 mx-1"></div>
-
-             <button onClick={handleRotate} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors" title="Rotate (R)">
-                 <RotateCw size={18} />
-             </button>
-            
-             <button onClick={handleFitWidth} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors" title="Fit Width (W)">
-                 <ArrowLeftRight size={18} />
-             </button>
-
-             <button onClick={handleFitHeight} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors" title="Fit Height (H)">
-                 <ArrowUpDown size={18} />
-             </button>
-
-             <div className="w-px h-4 bg-white/20 mx-1"></div>
-
-             <button onClick={handleReset} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors" title="Reset to Original (0)">
-                 <Maximize size={16} />
-             </button>
          </div>
       </div>
     </div>

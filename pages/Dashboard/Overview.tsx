@@ -130,7 +130,7 @@ export const Overview: React.FC = () => {
   const StatCard = ({ title, value, subValue, icon: Icon, gradient, shadowColor, link, trend }: any) => (
     <div
       onClick={() => navigate(link)}
-      className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
+      className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-slate-800 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
     >
       <div className={`
         absolute -right-12 -top-12 w-48 h-48 rounded-full 
@@ -143,50 +143,50 @@ export const Overview: React.FC = () => {
       
       <div className="relative z-10 flex flex-col h-full justify-between">
         <div>
-           <div className="flex items-center justify-between mb-5">
-              <div className={`p-3.5 rounded-2xl ${gradient} text-white shadow-lg ${shadowColor} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}>
-                 <Icon size={22} strokeWidth={2.5} />
+           <div className="flex items-center justify-between mb-4 sm:mb-5">
+              <div className={`p-3 sm:p-3.5 rounded-2xl ${gradient} text-white shadow-lg ${shadowColor} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}>
+                 <Icon size={20} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
               </div>
               
-              <div className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+              <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
                   <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
                       <ChevronRight size={18} strokeWidth={2.5} />
                   </div>
               </div>
            </div>
            
-           <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-wide uppercase mb-2">{title}</h3>
+           <h3 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-wide uppercase mb-2">{title}</h3>
            
            {loading ? (
              <Skeleton className="h-10 w-24 mb-1" />
            ) : (
              <div className="flex items-baseline gap-2">
-                 <span className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
+                 <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
                    {value}
                  </span>
              </div>
            )}
         </div>
         
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800/50">
-             <div className="flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-500/20">
+        <div className="flex items-center gap-2 sm:gap-3 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+             <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-500/10 px-2 sm:px-2.5 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-500/20">
                  <ArrowUpRight size={12} strokeWidth={3} />
                  <span>{trend}</span>
              </div>
-             <span className="text-xs font-bold text-slate-400 truncate group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors">{subValue}</span>
+             <span className="text-[10px] sm:text-xs font-bold text-slate-400 truncate group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors">{subValue}</span>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-8 pb-24 relative max-w-full">
+    <div className="space-y-6 sm:space-y-8 pb-24 relative max-w-full">
       
       {/* Header / Hero */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back, {user?.name}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 text-sm sm:text-base">Welcome back, {user?.name}</p>
           </div>
           <div className="hidden sm:block">
             <button className="flex items-center space-x-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 px-5 py-2.5 rounded-full transition-all shadow-sm hover:shadow-md active:scale-95">
@@ -197,7 +197,7 @@ export const Overview: React.FC = () => {
       </div>
 
       {/* --- Premium Stats Grid --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Total Files" 
           value={fileCount} 
@@ -240,28 +240,28 @@ export const Overview: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
         
         {/* Left Column (2/3) */}
-        <div className="xl:col-span-2 space-y-8 min-w-0">
+        <div className="xl:col-span-2 space-y-6 sm:space-y-8 min-w-0">
           
           {/* Recent Shares Widget - UPDATED: Fixed Grid Layout & Subtle Hover */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 relative overflow-hidden group/widget">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 sm:p-8 relative overflow-hidden group/widget">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity duration-500 group-hover/widget:opacity-100 opacity-50"></div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
-                  <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-100 dark:ring-blue-500/20">
-                          <Share2 size={24} />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 relative z-10 gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-100 dark:ring-blue-500/20">
+                          <Share2 size={20} className="sm:w-6 sm:h-6" />
                       </div>
                       <div>
-                          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Shared with You</h3>
+                          <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Shared with You</h3>
                           <div className="flex items-center gap-2 mt-1">
                               <span className="flex h-2 w-2 relative">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
                               </span>
-                              <p className="text-sm text-slate-500 font-medium">10 new files available</p>
+                              <p className="text-xs sm:text-sm text-slate-500 font-medium">10 new files available</p>
                           </div>
                       </div>
                   </div>
@@ -271,19 +271,19 @@ export const Overview: React.FC = () => {
                   </Link>
               </div>
               
-              {/* Grid Container */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 relative z-10">
+              {/* Grid Container - Adjusted for 1280-1440px range */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 min-[1440px]:grid-cols-5 2xl:grid-cols-6 min-[1800px]:grid-cols-7 gap-3 sm:gap-4 relative z-10">
                   {recentShares.map((share, index) => {
                       const colorStyle = avatarColors[index % avatarColors.length];
                       
                       return (
                       <div key={share.id} 
-                           className="group relative flex flex-col p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer h-full"
+                           className="group relative flex flex-col p-3 sm:p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer h-full lg:min-w-[100px]"
                       >
                           {/* Header Content */}
                           <div className="flex justify-between items-start mb-3">
                               <div className={`relative p-1 rounded-2xl ${colorStyle.split(' ')[0]}`}>
-                                 <div className={`w-10 h-10 rounded-xl p-0.5 bg-white/50 dark:bg-black/20 backdrop-blur-sm transition-colors overflow-hidden ring-1 ${colorStyle.split(' ring-')[1]}`}>
+                                 <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl p-0.5 bg-white/50 dark:bg-black/20 backdrop-blur-sm transition-colors overflow-hidden ring-1 ${colorStyle.split(' ring-')[1]}`}>
                                     <img 
                                         src={share.avatar} 
                                         alt={share.sharedBy} 
@@ -296,7 +296,7 @@ export const Overview: React.FC = () => {
                               </div>
                           </div>
 
-                          <div className="space-y-0.5 mb-2 flex-1">
+                          <div className="space-y-0.5 mb-2 flex-1 min-w-0">
                               <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={share.name}>
                                 {share.name}
                               </h4>
@@ -309,7 +309,7 @@ export const Overview: React.FC = () => {
                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                   {share.time}
                               </span>
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
                                    <Download size={12} className="text-slate-400 hover:text-blue-600" />
                               </div>
                           </div>
@@ -320,11 +320,11 @@ export const Overview: React.FC = () => {
 
           {/* Recent Files Section */}
           <section className="min-w-0">
-            <div className="flex items-center justify-between mb-6 px-1">
+            <div className="flex items-center justify-between mb-4 sm:mb-6 px-1">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Files</h2>
             </div>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 min-[1440px]:grid-cols-5 2xl:grid-cols-5 gap-4 sm:gap-6">
                 {Array.from({length: 10}).map((_, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden h-60">
                      <Skeleton className="w-full h-32" />
@@ -339,7 +339,7 @@ export const Overview: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 min-[1440px]:grid-cols-5 2xl:grid-cols-5 gap-4 sm:gap-6">
                 {files.slice(0, 10).map(file => <FileCard key={file.id} file={file} />)}
               </div>
             )}
@@ -348,10 +348,10 @@ export const Overview: React.FC = () => {
         </div>
 
         {/* Right Column (1/3) */}
-        <div className="xl:col-span-1 space-y-8 min-w-0">
+        <div className="xl:col-span-1 space-y-6 sm:space-y-8 min-w-0">
            
            {/* Dynamic Storage Donut Chart - UPDATED INTERACTIVITY */}
-           <div className="group/card bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
+           <div className="group/card bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 flex flex-col items-center relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
                {/* Decorative background glow that reacts to hover */}
                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent group-hover/card:via-blue-500/50 transition-all duration-500"></div>
                <div className="absolute -bottom-20 -right-20 w-48 h-48 bg-gradient-to-t from-blue-500/5 to-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -365,7 +365,7 @@ export const Overview: React.FC = () => {
               </div>
               
               {/* Chart Container */}
-              <div className="h-64 w-full relative flex items-center justify-center my-2 z-10">
+              <div className="h-56 sm:h-64 w-full relative flex items-center justify-center my-2 z-10">
                   <StorageChart 
                     data={storageStats} 
                     loading={loading} 
@@ -377,7 +377,7 @@ export const Overview: React.FC = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-300">
                        {activeStorageItem ? (
                            <div className="text-center animate-in fade-in zoom-in-95 duration-200">
-                               <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex flex-col leading-none">
+                               <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex flex-col leading-none">
                                    {FORMAT_BYTES(activeStorageItem.value).split(' ')[0]}
                                    <span className="text-sm font-bold text-slate-400 mt-0.5">{FORMAT_BYTES(activeStorageItem.value).split(' ')[1]}</span>
                                </span>
@@ -390,7 +390,7 @@ export const Overview: React.FC = () => {
                            </div>
                        ) : (
                            <div className="text-center transition-opacity duration-300">
-                               <span className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tighter">
+                               <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tighter">
                                    {storagePercent.toFixed(0)}%
                                </span>
                                <span className="block text-xs text-slate-400 uppercase font-bold tracking-widest mt-1">Used</span>
@@ -449,7 +449,7 @@ export const Overview: React.FC = () => {
 
            {/* Re-designed Recent Activity */}
            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-[500px] hover:shadow-lg transition-shadow duration-300">
-              <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-white/5 backdrop-blur-sm rounded-t-3xl">
+              <div className="p-4 sm:p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-white/5 backdrop-blur-sm rounded-t-3xl">
                   <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Activity size={18} className="text-orange-500" />
                       Activity Log
@@ -566,6 +566,7 @@ export const Overview: React.FC = () => {
                             ? 'bg-slate-900 dark:bg-white rotate-[135deg] scale-90 text-white dark:text-black' 
                             : 'bg-blue-600 hover:bg-blue-500 hover:scale-110 text-white'}
                     `}
+                    aria-label="Actions"
                 >
                     <Plus size={32} strokeWidth={2.5} />
                 </button>
