@@ -15,17 +15,19 @@ export const useFileViewer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [fileType, setFileType] = useState<string | null>(null);
   const [isSupportedImage, setIsSupportedImage] = useState(false);
+  const [fileNotFound, setFileNotFound] = useState(false);
 
   useEffect(() => {
     const modalType = searchParams.get('modal');
     const fileId = searchParams.get('fileId');
 
     if (modalType === 'preview' && fileId) {
+      setIsOpen(true);
       const foundFile = files.find(f => f.id === fileId);
       
       if (foundFile) {
         setActiveFile(foundFile);
-        setIsOpen(true);
+        setFileNotFound(false);
         
         // Determine extension
         const extension = foundFile.name.split('.').pop()?.toLowerCase() || '';
@@ -35,11 +37,14 @@ export const useFileViewer = () => {
         // Lock body scroll
         document.body.style.overflow = 'hidden';
       } else {
-        closeViewer();
+        // ID is in URL, but file not found in store
+        setActiveFile(null);
+        setFileNotFound(true);
       }
     } else {
       setIsOpen(false);
       setActiveFile(null);
+      setFileNotFound(false);
       document.body.style.overflow = '';
     }
 
@@ -56,11 +61,20 @@ export const useFileViewer = () => {
     navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   };
 
+  const navigateToFile = (fileId: string) => {
+      const newParams = new URLSearchParams(location.search);
+      newParams.set('modal', 'preview');
+      newParams.set('fileId', fileId);
+      navigate(`${location.pathname}?${newParams.toString()}`);
+  };
+
   return {
     isOpen,
     activeFile,
     fileType,
     isSupportedImage,
-    closeViewer
+    fileNotFound,
+    closeViewer,
+    navigateToFile
   };
 };

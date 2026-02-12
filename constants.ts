@@ -18,6 +18,11 @@ export const MOCK_FILES: FileItem[] = [
   { id: 'f5', name: 'Launch Video.mp4', type: FileType.VIDEO, size: 125000000, modifiedAt: '2023-10-21T11:00:00Z', owner: 'Marketing', isStarred: false, path: '/Marketing' },
   { id: 'f6', name: 'Profile.png', type: FileType.IMAGE, size: 2400000, modifiedAt: '2023-10-20T16:45:00Z', owner: 'Me', isStarred: false, path: '/Images' },
   { id: 'f7', name: 'Budget.xlsx', type: FileType.DOCUMENT, size: 500000, modifiedAt: '2023-10-26T08:30:00Z', owner: 'Finance', isStarred: true, path: '/Finance' },
+  // Additional Images for Gallery Demo
+  { id: 'f8', name: 'Office_Party_2023.jpg', type: FileType.IMAGE, size: 3200000, modifiedAt: '2023-10-19T10:00:00Z', owner: 'Me', isStarred: false, path: '/Images' },
+  { id: 'f9', name: 'Site_Mockup_v2.png', type: FileType.IMAGE, size: 1200000, modifiedAt: '2023-10-18T14:30:00Z', owner: 'Design Team', isStarred: true, path: '/Images' },
+  { id: 'f10', name: 'Logo_Transparent.webp', type: FileType.IMAGE, size: 800000, modifiedAt: '2023-10-18T09:00:00Z', owner: 'Me', isStarred: false, path: '/Images' },
+  { id: 'f11', name: 'Team_Retreat.jpg', type: FileType.IMAGE, size: 4500000, modifiedAt: '2023-10-15T11:20:00Z', owner: 'Sarah', isStarred: true, path: '/Images' },
 ];
 
 export const MOCK_NOTIFICATIONS: Notification[] = [

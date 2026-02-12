@@ -7,9 +7,9 @@ import { FileIcon, AlertTriangle, X } from 'lucide-react';
 const ImageViewer = React.lazy(() => import('./ImageViewer'));
 
 export const FileViewer: React.FC = () => {
-  const { isOpen, activeFile, isSupportedImage, closeViewer } = useFileViewer();
+  const { isOpen, activeFile, isSupportedImage, fileNotFound, closeViewer, navigateToFile } = useFileViewer();
 
-  if (!isOpen || !activeFile) return null;
+  if (!isOpen) return null;
 
   return createPortal(
     <div 
@@ -22,18 +22,38 @@ export const FileViewer: React.FC = () => {
             onClick={(e) => e.stopPropagation()} // Stop propagation for controls
         >
             
-            {/* 1. Supported Image Viewer */}
-            {isSupportedImage ? (
+            {/* 1. File Not Found Error State */}
+            {fileNotFound ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 animate-in zoom-in-95">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 shadow-2xl border border-red-500/20">
+                        <AlertTriangle size={40} className="text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">File Not Found</h2>
+                    <p className="text-slate-400 max-w-md mb-8">
+                        The requested file ID is invalid or the file has been deleted.
+                    </p>
+                    <button 
+                        onClick={closeViewer}
+                        className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-colors border border-slate-700"
+                    >
+                        Close Preview
+                    </button>
+                </div>
+            ) : activeFile && isSupportedImage ? (
+                /* 2. Supported Image Viewer */
                 <Suspense fallback={
                     <div className="w-full h-full flex items-center justify-center text-white">
                         <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 }>
-                    <ImageViewer file={activeFile} onClose={closeViewer} />
+                    <ImageViewer 
+                        file={activeFile} 
+                        onClose={closeViewer} 
+                        onNavigate={navigateToFile} 
+                    />
                 </Suspense>
-            ) : (
-                
-                /* 2. Fallback UI for unsupported types */
+            ) : activeFile ? (
+                /* 3. Fallback UI for unsupported types */
                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 animate-in zoom-in-95">
                     <div className="w-24 h-24 bg-slate-800 rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-slate-700">
                         <FileIcon size={48} className="text-slate-400" />
@@ -66,7 +86,7 @@ export const FileViewer: React.FC = () => {
                         <X size={24} />
                     </button>
                 </div>
-            )}
+            ) : null}
         </div>
     </div>,
     document.body
