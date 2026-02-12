@@ -25,11 +25,12 @@ interface ControlBtnProps {
   variant?: 'default' | 'danger' | 'primary';
   active?: boolean;
   tooltipPlacement?: 'top' | 'bottom';
+  tooltipAlign?: 'center' | 'left' | 'right';
   className?: string;
 }
 
 const ControlBtn: React.FC<ControlBtnProps> = ({ 
-  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false, tooltipPlacement = 'top', className = ''
+  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false, tooltipPlacement = 'top', tooltipAlign = 'center', className = ''
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -51,6 +52,10 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
   const arrowPosClass = tooltipPlacement === 'top'
     ? 'top-full border-t-slate-900/95 border-b-transparent border-x-transparent'
     : 'bottom-full border-b-slate-900/95 border-t-transparent border-x-transparent';
+
+  // Alignment classes
+  const alignClass = tooltipAlign === 'right' ? 'right-0' : tooltipAlign === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2';
+  const arrowAlignClass = tooltipAlign === 'right' ? 'right-4' : tooltipAlign === 'left' ? 'left-4' : 'left-1/2 -translate-x-1/2';
 
   return (
     <div className={`relative group flex items-center justify-center flex-shrink-0 ${className}`}>
@@ -74,7 +79,7 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
 
       {/* Premium Tooltip */}
       <div className={`
-          absolute ${tooltipPosClass} left-1/2 -translate-x-1/2 px-3 py-1.5 
+          absolute ${tooltipPosClass} ${alignClass} px-3 py-1.5 
           bg-slate-900/95 backdrop-blur-xl text-white text-xs font-medium rounded-lg 
           shadow-xl border border-white/10 whitespace-nowrap pointer-events-none z-[60]
           transition-all duration-200
@@ -91,7 +96,7 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
             )}
          </div>
          {/* Arrow */}
-         <div className={`absolute left-1/2 -translate-x-1/2 -mt-[1px] border-4 ${arrowPosClass}`}></div>
+         <div className={`absolute ${arrowAlignClass} -mt-[1px] border-4 ${arrowPosClass}`}></div>
       </div>
     </div>
   );
@@ -432,6 +437,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     active={isMobileMenuOpen}
                     tooltipPlacement="bottom"
+                    tooltipAlign="right"
                  />
                  {isMobileMenuOpen && (
                      <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 origin-top-right">
@@ -459,6 +465,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                 onClick={onClose}
                 variant="danger"
                 tooltipPlacement="bottom"
+                tooltipAlign="right"
              />
         </div>
       </div>
