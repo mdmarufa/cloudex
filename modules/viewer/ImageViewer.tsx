@@ -102,6 +102,40 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
   );
 };
 
+// CSS Injection for Smooth, Premium Slide Animations
+const slideStyles = `
+@keyframes slide-in-right {
+  0% { 
+    transform: translate3d(60px, 0, 0) scale(0.96); 
+    opacity: 0; 
+    filter: blur(8px); 
+  }
+  100% { 
+    transform: translate3d(0, 0, 0) scale(1); 
+    opacity: 1; 
+    filter: blur(0); 
+  }
+}
+@keyframes slide-in-left {
+  0% { 
+    transform: translate3d(-60px, 0, 0) scale(0.96); 
+    opacity: 0; 
+    filter: blur(8px); 
+  }
+  100% { 
+    transform: translate3d(0, 0, 0) scale(1); 
+    opacity: 1; 
+    filter: blur(0); 
+  }
+}
+.animate-slide-right { 
+    animation: slide-in-right 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; 
+}
+.animate-slide-left { 
+    animation: slide-in-left 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; 
+}
+`;
+
 const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) => {
   const { files } = useSelector((state: RootState) => state.dashboard);
   
@@ -114,6 +148,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   
   // Zoom Input State
   const [zoomInput, setZoomInput] = useState('100');
@@ -146,7 +181,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
     setIsMobileMenuOpen(false);
   }, [file.id]);
 
-  // Scroll active thumbnail into view - REPLACED scrollIntoView with manual calculation
+  // Scroll active thumbnail into view
   useEffect(() => {
     if (activeThumbRef.current && filmstripRef.current) {
         const container = filmstripRef.current;
@@ -231,11 +266,17 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   };
 
   const handleNext = () => {
-      if (hasNext) onNavigate(allImages[currentIndex + 1].id);
+      if (hasNext) {
+          setDirection('right');
+          onNavigate(allImages[currentIndex + 1].id);
+      }
   };
 
   const handlePrev = () => {
-      if (hasPrev) onNavigate(allImages[currentIndex - 1].id);
+      if (hasPrev) {
+          setDirection('left');
+          onNavigate(allImages[currentIndex - 1].id);
+      }
   };
 
   // --- Input Handlers ---
@@ -387,6 +428,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      <style>{slideStyles}</style>
+      
       {/* Background Mesh Gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800/20 via-slate-900/50 to-black pointer-events-none z-0"></div>
 
@@ -399,8 +442,10 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg">
                 <FileImage className="text-blue-400" size={20} />
              </div>
+             
+             {/* Title Container - min-w-0 allows flex child to shrink properly for truncation */}
              <div className="flex flex-col text-white drop-shadow-md min-w-0">
-                <h3 className="text-sm sm:text-base font-bold truncate leading-tight" title={file.name}>{file.name}</h3>
+                <h3 className="text-sm sm:text-base font-bold truncate leading-tight w-full" title={file.name}>{file.name}</h3>
                 <div className="flex items-center gap-2 text-xs text-slate-300 font-medium mt-0.5">
                     <span className="bg-white/10 px-1.5 py-0.5 rounded">{FORMAT_BYTES(file.size)}</span>
                     <span className="hidden sm:inline">•</span>
@@ -528,6 +573,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
             </div>
         ) : (
             <img 
+                key={file.id}
                 ref={imageRef}
                 src={imageUrl} 
                 alt={file.name}
@@ -535,9 +581,10 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                 onError={() => { setIsLoading(false); setHasError(true); }}
                 className={`
                     max-w-none max-h-none 
-                    transition-transform ease-[cubic-bezier(0.25,0.4,0.25,1)] will-change-transform 
-                    ${isDragging ? 'duration-0' : 'duration-300'} 
+                    will-change-transform 
+                    ${isDragging ? 'duration-0' : 'transition-transform duration-300 ease-[cubic-bezier(0.25,0.4,0.25,1)]'} 
                     ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
+                    ${direction === 'right' ? 'animate-slide-right' : direction === 'left' ? 'animate-slide-left' : ''}
                 `}
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
