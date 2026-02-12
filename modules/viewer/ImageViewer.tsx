@@ -141,13 +141,23 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
     setIsMobileMenuOpen(false);
   }, [file.id]);
 
-  // Scroll active thumbnail into view
+  // Scroll active thumbnail into view - REPLACED scrollIntoView with manual calculation
   useEffect(() => {
-    if (activeThumbRef.current) {
-        activeThumbRef.current.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center'
+    if (activeThumbRef.current && filmstripRef.current) {
+        const container = filmstripRef.current;
+        const thumb = activeThumbRef.current;
+        
+        // Manual scroll calculation to prevent whole-page shifting
+        const containerWidth = container.clientWidth;
+        const thumbLeft = thumb.offsetLeft;
+        const thumbWidth = thumb.offsetWidth;
+        
+        // Center the thumbnail
+        const scrollTarget = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
+        
+        container.scrollTo({
+            left: scrollTarget,
+            behavior: 'smooth'
         });
     }
   }, [file.id]);
@@ -361,7 +371,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
 
   return (
     <div 
-      className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden"
+      className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden touch-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -480,7 +490,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       {/* Main Viewport */}
       <div 
         ref={containerRef}
-        className={`flex-1 overflow-hidden flex items-center justify-center cursor-${isDragging ? 'grabbing' : 'grab'} relative z-10`}
+        className={`flex-1 overflow-hidden flex items-center justify-center cursor-${isDragging ? 'grabbing' : 'grab'} relative z-10 w-full h-full`}
         onClick={(e) => e.stopPropagation()} 
       >
         {isLoading && (
@@ -526,7 +536,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                     transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
                     // Initial constraints to ensure it starts reasonably sized
                     maxHeight: '85vh',
-                    maxWidth: '90vw',
+                    maxWidth: '90%', // Use % instead of vw for safety
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }}
                 draggable={false}
@@ -541,7 +551,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
          {allImages.length > 1 && (
             <div 
                 ref={filmstripRef}
-                className="flex items-center gap-3 p-3 mb-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto max-w-[90vw] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth"
+                className="relative flex items-center gap-3 p-3 mb-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto w-auto max-w-[calc(100%-2rem)] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth mx-4"
             >
                 {allImages.map((img) => (
                     <div 
@@ -567,8 +577,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
          )}
 
          {/* Floating Control Bar */}
-         <div className="pointer-events-auto max-w-[95vw] mx-auto">
-             <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+         <div className="pointer-events-auto w-full px-4 flex justify-center">
+             <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] max-w-full">
                  
                  {/* Section: Zoom */}
                  <div className="flex items-center gap-1 flex-shrink-0">

@@ -13,12 +13,13 @@ export const FileViewer: React.FC = () => {
 
   return createPortal(
     <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden overscroll-none"
         onClick={closeViewer} // Overlay click closes
+        style={{ touchAction: 'none' }} // Ensure no touch actions propagate to body
     >
         {/* Modal Content */}
         <div 
-            className="w-full h-full relative" 
+            className="w-full h-full relative overflow-hidden flex flex-col" 
             onClick={(e) => e.stopPropagation()} // Stop propagation for controls
         >
             
