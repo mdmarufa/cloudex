@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { FileItem, FileType } from '../../types';
@@ -15,660 +15,345 @@ interface ImageViewerProps {
   onNavigate: (fileId: string) => void;
 }
 
-// --- Premium Control Button Component ---
+// --- Styles for Animation ---
+const styles = `
+  .viewer-slide-enter-right { animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .viewer-slide-exit-left { animation: slideOutLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  
+  .viewer-slide-enter-left { animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .viewer-slide-exit-right { animation: slideOutRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  @keyframes slideInRight {
+    from { transform: translate3d(100%, 0, 0); opacity: 1; filter: brightness(1.1); }
+    to { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
+  }
+  @keyframes slideOutLeft {
+    from { transform: translate3d(0, 0, 0); opacity: 1; scale: 1; }
+    to { transform: translate3d(-20%, 0, 0); opacity: 0; scale: 0.95; }
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translate3d(-100%, 0, 0); opacity: 1; filter: brightness(1.1); }
+    to { transform: translate3d(0, 0, 0); opacity: 1; filter: brightness(1); }
+  }
+  @keyframes slideOutRight {
+    from { transform: translate3d(0, 0, 0); opacity: 1; scale: 1; }
+    to { transform: translate3d(20%, 0, 0); opacity: 0; scale: 0.95; }
+  }
+`;
+
+// --- Control Button ---
 interface ControlBtnProps {
   icon: React.ElementType;
   label: string;
   onClick: () => void;
   shortcut?: string;
   disabled?: boolean;
-  variant?: 'default' | 'danger' | 'primary';
   active?: boolean;
-  tooltipPlacement?: 'top' | 'bottom';
-  tooltipAlign?: 'center' | 'left' | 'right';
   className?: string;
 }
 
 const ControlBtn: React.FC<ControlBtnProps> = ({ 
-  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false, tooltipPlacement = 'top', tooltipAlign = 'center', className = ''
-}) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  const getBaseStyles = () => {
-    switch(variant) {
-      case 'danger': return 'hover:bg-red-500/20 text-white hover:text-red-400 border-transparent hover:border-red-500/30';
-      case 'primary': return 'bg-blue-600 hover:bg-blue-500 text-white border-transparent shadow-blue-500/20 shadow-lg';
-      default: return 'hover:bg-white/10 text-slate-200 hover:text-white border-white/5 hover:border-white/20';
-    }
-  };
-
-  const activeStyles = active ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : '';
-
-  // Tooltip positioning logic
-  const tooltipPosClass = tooltipPlacement === 'top' 
-    ? 'bottom-full mb-3 origin-bottom' 
-    : 'top-full mt-3 origin-top';
-    
-  const arrowPosClass = tooltipPlacement === 'top'
-    ? 'top-full border-t-slate-900/95 border-b-transparent border-x-transparent'
-    : 'bottom-full border-b-slate-900/95 border-t-transparent border-x-transparent';
-
-  // Alignment classes
-  const alignClass = tooltipAlign === 'right' ? 'right-0' : tooltipAlign === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2';
-  const arrowAlignClass = tooltipAlign === 'right' ? 'right-4' : tooltipAlign === 'left' ? 'left-4' : 'left-1/2 -translate-x-1/2';
-
-  return (
-    <div className={`relative group flex items-center justify-center flex-shrink-0 ${className}`}>
-      <button 
-        onClick={onClick}
-        disabled={disabled}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        className={`
-            relative p-2 sm:p-2.5 rounded-xl backdrop-blur-md border transition-all duration-300 ease-[cubic-bezier(0.25,0.4,0.25,1)]
-            disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100
-            hover:scale-110 active:scale-95
-            ${getBaseStyles()}
-            ${activeStyles}
-        `}
-        aria-label={label}
-      >
-        <Icon size={20} strokeWidth={2} />
-        {active && <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20 animate-pulse"></span>}
-      </button>
-
-      {/* Premium Tooltip */}
-      <div className={`
-          absolute ${tooltipPosClass} ${alignClass} px-3 py-1.5 
-          bg-slate-900/95 backdrop-blur-xl text-white text-xs font-medium rounded-lg 
-          shadow-xl border border-white/10 whitespace-nowrap pointer-events-none z-[60]
-          transition-all duration-200
-          ${showTooltip ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
-          ${tooltipPlacement === 'top' && !showTooltip ? 'translate-y-2' : ''}
-          ${tooltipPlacement === 'bottom' && !showTooltip ? '-translate-y-2' : ''}
-      `}>
-         <div className="flex items-center gap-2">
-            <span>{label}</span>
-            {shortcut && (
-                <span className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] font-mono text-slate-300 border border-white/5">
-                    {shortcut}
-                </span>
-            )}
-         </div>
-         {/* Arrow */}
-         <div className={`absolute ${arrowAlignClass} -mt-[1px] border-4 ${arrowPosClass}`}></div>
-      </div>
-    </div>
-  );
-};
-
-// CSS Injection for Smooth, Premium Slide Animations
-const slideStyles = `
-@keyframes slide-in-right {
-  0% { 
-    transform: translate3d(60px, 0, 0) scale(0.96); 
-    opacity: 0; 
-    filter: blur(8px); 
-  }
-  100% { 
-    transform: translate3d(0, 0, 0) scale(1); 
-    opacity: 1; 
-    filter: blur(0); 
-  }
-}
-@keyframes slide-in-left {
-  0% { 
-    transform: translate3d(-60px, 0, 0) scale(0.96); 
-    opacity: 0; 
-    filter: blur(8px); 
-  }
-  100% { 
-    transform: translate3d(0, 0, 0) scale(1); 
-    opacity: 1; 
-    filter: blur(0); 
-  }
-}
-.animate-slide-right { 
-    animation: slide-in-right 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; 
-}
-.animate-slide-left { 
-    animation: slide-in-left 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; 
-}
-`;
+  icon: Icon, onClick, disabled = false, active = false, className = ''
+}) => (
+  <button 
+    onClick={onClick}
+    disabled={disabled}
+    className={`
+        p-2.5 rounded-xl backdrop-blur-md border transition-all duration-200
+        disabled:opacity-30 disabled:cursor-not-allowed
+        active:scale-95 hover:scale-105
+        ${active 
+            ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+            : 'bg-black/40 hover:bg-white/10 text-slate-200 hover:text-white border-white/5 hover:border-white/20'}
+        ${className}
+    `}
+  >
+    <Icon size={20} strokeWidth={2} />
+  </button>
+);
 
 const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) => {
   const { files } = useSelector((state: RootState) => state.dashboard);
   
-  // State
+  // --- View State ---
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   
-  // Zoom Input State
-  const [zoomInput, setZoomInput] = useState('100');
-  const [isEditingZoom, setIsEditingZoom] = useState(false);
+  // --- Animation State ---
+  // We keep track of the *previous* file to animate it out while the new one animates in.
+  const [activeFile, setActiveFile] = useState<FileItem>(file);
+  const [previousFile, setPreviousFile] = useState<FileItem | null>(null);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Touch Swipe State
-  const minSwipeDistance = 50;
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  
+  // --- Refs ---
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   const activeThumbRef = useRef<HTMLDivElement>(null);
   const filmstripRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // --- Image List Logic (Filmstrip) ---
+  // --- Derived Data ---
   const allImages = useMemo(() => files.filter(f => f.type === FileType.IMAGE), [files]);
-  const currentIndex = allImages.findIndex(f => f.id === file.id);
+  const currentIndex = allImages.findIndex(f => f.id === activeFile.id);
   const hasNext = currentIndex < allImages.length - 1;
   const hasPrev = currentIndex > 0;
 
-  // Reset view when file changes
+  // --- Synchronization Effect ---
+  // When props.file changes, we trigger the transition logic
   useEffect(() => {
-    setScale(1);
-    setRotation(0);
-    setPosition({ x: 0, y: 0 });
-    setIsLoading(true);
-    setHasError(false);
-    setIsMobileMenuOpen(false);
-  }, [file.id]);
+    if (file.id !== activeFile.id) {
+        // 1. Determine direction
+        const newIndex = allImages.findIndex(f => f.id === file.id);
+        const oldIndex = allImages.findIndex(f => f.id === activeFile.id);
+        const newDirection = newIndex > oldIndex ? 'right' : 'left';
 
-  // Scroll active thumbnail into view
+        // 2. Set transition state
+        setDirection(newDirection);
+        setPreviousFile(activeFile);
+        setActiveFile(file);
+        setIsAnimating(true);
+        
+        // 3. Reset Zoom/Pan for the new image immediately
+        setScale(1);
+        setRotation(0);
+        setPosition({ x: 0, y: 0 });
+
+        // 4. Clear transition after animation duration
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = setTimeout(() => {
+            setPreviousFile(null);
+            setIsAnimating(false);
+        }, 500); // Matches CSS animation duration
+    }
+  }, [file, activeFile, allImages]);
+
+  // Clean up timeout
+  useEffect(() => {
+    return () => {
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+    };
+  }, []);
+
+  // --- Filmstrip Scroll ---
   useEffect(() => {
     if (activeThumbRef.current && filmstripRef.current) {
         const container = filmstripRef.current;
         const thumb = activeThumbRef.current;
-        
-        // Manual scroll calculation to prevent whole-page shifting
-        const containerWidth = container.clientWidth;
-        const thumbLeft = thumb.offsetLeft;
-        const thumbWidth = thumb.offsetWidth;
-        
-        // Center the thumbnail
-        const scrollTarget = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
-        
-        container.scrollTo({
-            left: scrollTarget,
-            behavior: 'smooth'
-        });
+        const scrollTarget = thumb.offsetLeft - (container.clientWidth / 2) + (thumb.offsetWidth / 2);
+        container.scrollTo({ left: scrollTarget, behavior: 'smooth' });
     }
-  }, [file.id]);
+  }, [activeFile.id]);
 
-  // Close Mobile Menu on Click Outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobileMenuOpen]);
+  // --- Handlers ---
 
-  // --- Sync Input with Scale ---
-  useEffect(() => {
-    if (!isEditingZoom) {
-        setZoomInput(Math.round(scale * 100).toString());
-    }
-  }, [scale, isEditingZoom]);
+  const handleNext = useCallback(() => {
+      if (hasNext && !isAnimating) onNavigate(allImages[currentIndex + 1].id);
+  }, [hasNext, isAnimating, onNavigate, allImages, currentIndex]);
 
-  // --- Controls Actions ---
-  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.2, 10)); // Logarithmic zoom feels better
-  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.2, 0.1));
+  const handlePrev = useCallback(() => {
+      if (hasPrev && !isAnimating) onNavigate(allImages[currentIndex - 1].id);
+  }, [hasPrev, isAnimating, onNavigate, allImages, currentIndex]);
+
+  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.5, 8));
+  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.5, 0.5));
   const handleRotate = () => setRotation(prev => prev + 90);
-  
-  const handleReset = () => {
-    setScale(1);
-    setRotation(0);
-    setPosition({ x: 0, y: 0 });
-  };
+  const handleReset = () => { setScale(1); setRotation(0); setPosition({ x: 0, y: 0 }); };
 
-  // Fixed Fit Logic: Use 100% of container dimension
-  const handleFitWidth = () => {
-    if (!containerRef.current || !imageRef.current) return;
-    const containerW = containerRef.current.clientWidth;
-    const rect = imageRef.current.getBoundingClientRect();
-    const currentVisualWidth = rect.width;
-    
-    // Avoid division by zero
-    if (currentVisualWidth === 0) return;
-
-    // Calculate scaling factor to make visual width match container width
-    // Factor = Target / Current
-    const factor = (containerW) / currentVisualWidth;
-    
-    setScale(prev => prev * factor);
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const handleFitHeight = () => {
-    if (!containerRef.current || !imageRef.current) return;
-    const containerH = containerRef.current.clientHeight;
-    const rect = imageRef.current.getBoundingClientRect();
-    const currentVisualHeight = rect.height;
-
-    if (currentVisualHeight === 0) return;
-
-    const factor = (containerH) / currentVisualHeight;
-    
-    setScale(prev => prev * factor);
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const handleNext = () => {
-      if (hasNext) {
-          setDirection('right');
-          onNavigate(allImages[currentIndex + 1].id);
-      }
-  };
-
-  const handlePrev = () => {
-      if (hasPrev) {
-          setDirection('left');
-          onNavigate(allImages[currentIndex - 1].id);
-      }
-  };
-
-  // --- Input Handlers ---
-  const handleZoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      if (/^\d*$/.test(val)) setZoomInput(val);
-  };
-
-  const commitZoomInput = () => {
-      setIsEditingZoom(false);
-      let val = parseInt(zoomInput, 10);
-      if (isNaN(val)) {
-          setZoomInput(Math.round(scale * 100).toString());
-          return;
-      }
-      val = Math.max(10, Math.min(1000, val));
-      setScale(val / 100);
-      setZoomInput(val.toString());
-  };
-
-  const handleZoomInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-          (e.target as HTMLInputElement).blur();
-      }
-  };
-
-  // --- Keyboard & Wheel Support ---
+  // --- Keyboard ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === 'INPUT') return;
-
       switch (e.key) {
         case 'Escape': onClose(); break;
-        case '=': 
-        case '+': handleZoomIn(); break;
-        case '-': handleZoomOut(); break;
-        case 'r': 
-        case 'R': handleRotate(); break;
-        case '0': handleReset(); break;
-        case 'w': 
-        case 'W': handleFitWidth(); break;
-        case 'h': 
-        case 'H': handleFitHeight(); break;
         case 'ArrowRight': handleNext(); break;
         case 'ArrowLeft': handlePrev(); break;
+        case '+': handleZoomIn(); break;
+        case '-': handleZoomOut(); break;
+        case '0': handleReset(); break;
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, scale, rotation, currentIndex, allImages]);
+  }, [onClose, handleNext, handlePrev]);
 
-  // Mouse Wheel Zoom
-  const handleWheel = (e: React.WheelEvent) => {
-      e.stopPropagation();
-      if (e.ctrlKey || Math.abs(e.deltaY) > 0) {
-        if (e.deltaY < 0) {
-            setScale(prev => Math.min(prev * 1.1, 10));
-        } else {
-            setScale(prev => Math.max(prev / 1.1, 0.1));
-        }
-      }
-  };
-
-  // --- Panning Logic (Mouse) ---
+  // --- Pan Logic ---
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    if (scale <= 1) return;
     e.preventDefault();
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
-
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
+    if (isDragging && scale > 1) {
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
     }
   };
-
   const handleMouseUp = () => setIsDragging(false);
 
-  // --- Touch Logic (Swipe & Pan) ---
+  // --- Swipe Logic (Mobile) ---
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  
   const handleTouchStart = (e: React.TouchEvent) => {
-    // If zoomed in, allow dragging (panning) via touch
-    if (scale > 1) {
-       setIsDragging(true);
-       setDragStart({ 
-           x: e.targetTouches[0].clientX - position.x, 
-           y: e.targetTouches[0].clientY - position.y 
-       });
-       return;
-    }
-
-    // If not zoomed, prepare for swipe detection
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+      if (scale > 1) {
+          setIsDragging(true);
+          setDragStart({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y });
+          return;
+      }
+      setTouchStart(e.touches[0].clientX);
   };
-
+  
   const handleTouchMove = (e: React.TouchEvent) => {
-    // Pan if zoomed
-    if (scale > 1 && isDragging) {
-       setPosition({
-         x: e.targetTouches[0].clientX - dragStart.x,
-         y: e.targetTouches[0].clientY - dragStart.y
-       });
-       return;
-    }
-
-    // Track swipe
-    setTouchEnd(e.targetTouches[0].clientX);
+      if (isDragging && scale > 1) {
+          setPosition({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
+      }
   };
 
-  const handleTouchEnd = () => {
-    setIsDragging(false);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+      setIsDragging(false);
+      if (scale === 1 && touchStart !== null) {
+          const touchEnd = e.changedTouches[0].clientX;
+          const dist = touchStart - touchEnd;
+          if (dist > 50) handleNext();
+          if (dist < -50) handlePrev();
+      }
+      setTouchStart(null);
+  };
 
-    // Swipe Navigation (Only if not zoomed)
-    if (scale === 1 && touchStart !== null && touchEnd !== null) {
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe && hasNext) {
-            handleNext();
-        } else if (isRightSwipe && hasPrev) {
-            handlePrev();
+  const renderImage = (f: FileItem, isExiting: boolean) => {
+    const imageUrl = `https://picsum.photos/seed/${f.id}/1920/1080`;
+    
+    // Calculate classes based on state
+    let animClass = '';
+    if (isAnimating) {
+        if (direction === 'right') {
+            animClass = isExiting ? 'viewer-slide-exit-left' : 'viewer-slide-enter-right';
+        } else {
+            animClass = isExiting ? 'viewer-slide-exit-right' : 'viewer-slide-enter-left';
         }
     }
-    
-    // Reset
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
 
-  // --- Image Source ---
-  const imageUrl = `https://picsum.photos/seed/${file.id}/1920/1080`;
-
-  return (
-    <div 
-      className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden touch-none"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
-      // Touch Handlers
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <style>{slideStyles}</style>
-      
-      {/* Background Mesh Gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800/20 via-slate-900/50 to-black pointer-events-none z-0"></div>
-
-      {/* Top Bar: Info & Close */}
-      <div className="absolute top-0 inset-x-0 z-50 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 hover:opacity-100">
-        
-        {/* Left: Title & Info - Constrained Width to prevent overflow */}
-        <div className="flex items-center gap-3 sm:gap-4 pointer-events-auto flex-1 min-w-0 pr-4">
-             {/* File Type Icon Badge */}
-             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg">
-                <FileImage className="text-blue-400" size={20} />
-             </div>
-             
-             {/* Title Container - min-w-0 allows flex child to shrink properly for truncation */}
-             <div className="flex flex-col text-white drop-shadow-md min-w-0">
-                <h3 className="text-sm sm:text-base font-bold truncate leading-tight w-full" title={file.name}>{file.name}</h3>
-                <div className="flex items-center gap-2 text-xs text-slate-300 font-medium mt-0.5">
-                    <span className="bg-white/10 px-1.5 py-0.5 rounded">{FORMAT_BYTES(file.size)}</span>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="hidden sm:inline">{new Date(file.modifiedAt).toLocaleDateString()}</span>
-                </div>
-            </div>
-        </div>
-        
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 pointer-events-auto flex-shrink-0">
-             
-             {/* Desktop Actions */}
-             <div className="hidden md:flex items-center gap-2">
-                <ControlBtn 
-                   icon={ExternalLink} 
-                   label="Open Original" 
-                   onClick={() => window.open(imageUrl, '_blank')}
-                   tooltipPlacement="bottom" 
-                />
-                <ControlBtn 
-                   icon={Download} 
-                   label="Download" 
-                   onClick={() => {}} 
-                   tooltipPlacement="bottom"
-                />
-                <div className="w-px h-6 bg-white/10 mx-1"></div>
-             </div>
-
-             {/* Mobile Actions Menu */}
-             <div className="md:hidden relative" ref={menuRef}>
-                 <ControlBtn 
-                    icon={MoreVertical} 
-                    label="Options" 
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    active={isMobileMenuOpen}
-                    tooltipPlacement="bottom"
-                    tooltipAlign="right"
-                 />
-                 {isMobileMenuOpen && (
-                     <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 origin-top-right">
-                         <button 
-                             onClick={() => window.open(imageUrl, '_blank')}
-                             className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"
-                         >
-                             <ExternalLink size={16} /> Open Original
-                         </button>
-                         <button 
-                             onClick={() => {}}
-                             className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"
-                         >
-                             <Download size={16} /> Download
-                         </button>
-                     </div>
-                 )}
-             </div>
-
-             {/* Close Button (Always Visible) */}
-             <ControlBtn 
-                icon={X} 
-                label="Close" 
-                shortcut="Esc"
-                onClick={onClose}
-                variant="danger"
-                tooltipPlacement="bottom"
-                tooltipAlign="right"
-             />
-        </div>
-      </div>
-
-      {/* Navigation Arrows (Side) - HIDDEN ON MOBILE/TABLET */}
-      <div className="absolute inset-y-0 left-6 hidden lg:flex items-center z-40 pointer-events-none">
-          {hasPrev && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                className="p-4 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-2xl border border-white/5 active:scale-95 group"
-                title="Previous"
-              >
-                  <ChevronLeft size={32} className="group-hover:-translate-x-0.5 transition-transform" />
-              </button>
-          )}
-      </div>
-      <div className="absolute inset-y-0 right-6 hidden lg:flex items-center z-40 pointer-events-none">
-          {hasNext && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                className="p-4 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all pointer-events-auto hover:scale-110 shadow-2xl border border-white/5 active:scale-95 group"
-                title="Next"
-              >
-                  <ChevronRight size={32} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
-          )}
-      </div>
-
-      {/* Main Viewport */}
-      <div 
-        ref={containerRef}
-        className={`flex-1 overflow-hidden flex items-center justify-center cursor-${isDragging ? 'grabbing' : 'grab'} relative z-10 w-full h-full`}
-        onClick={(e) => e.stopPropagation()} 
-      >
-        {isLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none z-50">
-                <div className="relative">
-                    <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full animate-pulse opacity-20"></div>
-                    </div>
-                </div>
-                <p className="mt-4 text-sm font-medium text-slate-300 animate-pulse tracking-wide uppercase">Loading Preview</p>
-            </div>
-        )}
-
-        {hasError ? (
-            <div className="flex flex-col items-center text-slate-400 pointer-events-none z-50 animate-in zoom-in-95">
-                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-xl shadow-red-500/5">
-                    <AlertCircle size={40} className="text-red-500" />
-                </div>
-                <p className="text-xl font-bold text-white mb-2">Failed to load image</p>
-                <p className="text-sm text-slate-400 mb-6">The image data could not be retrieved.</p>
-                <button 
-                    onClick={() => { setHasError(false); setIsLoading(true); }} 
-                    className="pointer-events-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors border border-white/10"
-                >
-                    Try Again
-                </button>
-            </div>
-        ) : (
+    return (
+        <div 
+            key={f.id}
+            className={`absolute inset-0 flex items-center justify-center w-full h-full pointer-events-none ${animClass}`}
+            style={{ 
+                // Exiting images shouldn't block pointer events for controls (though container blocks clicks anyway)
+                zIndex: isExiting ? 0 : 1 
+            }}
+        >
             <img 
-                key={file.id}
-                ref={imageRef}
                 src={imageUrl} 
-                alt={file.name}
-                onLoad={() => setIsLoading(false)}
-                onError={() => { setIsLoading(false); setHasError(true); }}
-                className={`
-                    max-w-none max-h-none 
-                    will-change-transform 
-                    ${isDragging ? 'duration-0' : 'transition-transform duration-300 ease-[cubic-bezier(0.25,0.4,0.25,1)]'} 
-                    ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
-                    ${direction === 'right' ? 'animate-slide-right' : direction === 'left' ? 'animate-slide-left' : ''}
-                `}
+                alt={f.name}
+                className="max-w-[95%] max-h-[90vh] object-contain shadow-2xl transition-transform duration-200 ease-out will-change-transform"
                 style={{
-                    transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
-                    // Initial constraints to ensure it starts reasonably sized
-                    maxHeight: '85vh',
-                    maxWidth: '90%', // Use % instead of vw for safety
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    // Only apply zoom/pan transforms to the ACTIVE image, not the exiting one
+                    transform: !isExiting 
+                        ? `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})` 
+                        : 'none',
+                    cursor: scale > 1 ? 'grab' : 'default'
                 }}
                 draggable={false}
             />
-        )}
+        </div>
+    );
+  };
+
+  return (
+    <div 
+      className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden"
+      onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
+    >
+      <style>{styles}</style>
+      
+      {/* 1. Top Bar */}
+      <div className="absolute top-0 inset-x-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+        <div className="flex items-center gap-3 pointer-events-auto min-w-0 pr-4">
+             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                <FileImage className="text-blue-400" size={20} />
+             </div>
+             <div className="min-w-0 flex flex-col">
+                 <h3 className="text-white font-bold truncate leading-tight">{activeFile.name}</h3>
+                 <span className="text-xs text-slate-300">{FORMAT_BYTES(activeFile.size)} • {new Date(activeFile.modifiedAt).toLocaleDateString()}</span>
+             </div>
+        </div>
+        
+        <div className="flex items-center gap-2 pointer-events-auto">
+             <div className="hidden md:flex gap-2 mr-2">
+                <ControlBtn icon={ExternalLink} label="Open" onClick={() => {}} />
+                <ControlBtn icon={Download} label="Download" onClick={() => {}} />
+             </div>
+             <ControlBtn icon={X} label="Close" onClick={onClose} className="hover:bg-red-500/20 hover:text-red-400" />
+        </div>
       </div>
 
-      {/* Bottom Area: Controls */}
-      <div className="absolute bottom-0 inset-x-0 z-50 flex flex-col items-center pb-8 pt-24 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
+      {/* 2. Main Viewport (Stack) */}
+      <div ref={containerRef} className="flex-1 relative w-full h-full z-0 overflow-hidden">
+          {/* Background Gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900/40 via-black/80 to-black z-[-1]" />
+          
+          {/* Render Exiting Image (if any) */}
+          {previousFile && renderImage(previousFile, true)}
+          
+          {/* Render Active Image */}
+          {renderImage(activeFile, false)}
+
+          {/* Nav Arrows (Desktop) */}
+          {!isAnimating && hasPrev && (
+            <button 
+                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/20 hover:bg-black/50 text-white/50 hover:text-white backdrop-blur-sm transition-all hover:scale-110 z-20 hidden lg:flex"
+            >
+                <ChevronLeft size={32} />
+            </button>
+          )}
+          {!isAnimating && hasNext && (
+            <button 
+                onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/20 hover:bg-black/50 text-white/50 hover:text-white backdrop-blur-sm transition-all hover:scale-110 z-20 hidden lg:flex"
+            >
+                <ChevronRight size={32} />
+            </button>
+          )}
+      </div>
+
+      {/* 3. Bottom Controls */}
+      <div className="absolute bottom-0 inset-x-0 z-50 flex flex-col items-center pb-8 pt-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
          
          {/* Filmstrip */}
          {allImages.length > 1 && (
             <div 
                 ref={filmstripRef}
-                className="relative flex items-center gap-3 p-3 mb-6 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-x-auto w-auto max-w-[calc(100%-2rem)] sm:max-w-2xl pointer-events-auto custom-scrollbar scroll-smooth mx-4"
+                className="relative flex gap-3 p-2 mb-6 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/5 overflow-x-auto max-w-[90vw] sm:max-w-xl pointer-events-auto scroll-smooth [&::-webkit-scrollbar]:hidden"
             >
                 {allImages.map((img) => (
-                    <div 
+                    <button 
                         key={img.id}
-                        ref={img.id === file.id ? activeThumbRef : null}
-                        onClick={(e) => { e.stopPropagation(); onNavigate(img.id); }}
+                        ref={img.id === activeFile.id ? activeThumbRef : null}
+                        onClick={(e) => { e.stopPropagation(); if(!isAnimating) onNavigate(img.id); }}
                         className={`
-                            relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group
-                            ${img.id === file.id 
-                                ? 'opacity-100 scale-105 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20' 
-                                : 'opacity-50 hover:opacity-100 hover:scale-105 hover:ring-2 hover:ring-white/20'}
+                            relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300
+                            ${img.id === activeFile.id 
+                                ? 'opacity-100 ring-2 ring-blue-500 scale-100' 
+                                : 'opacity-40 hover:opacity-80 scale-95 hover:scale-100'}
                         `}
                     >
-                        <img 
-                            src={`https://picsum.photos/seed/${img.id}/100/100`} 
-                            alt={img.name}
-                            className="w-full h-full object-cover transform transition-transform group-hover:scale-110"
-                            loading="lazy"
-                        />
-                    </div>
+                        <img src={`https://picsum.photos/seed/${img.id}/100/100`} alt="" className="w-full h-full object-cover" />
+                    </button>
                 ))}
             </div>
          )}
 
-         {/* Floating Control Bar */}
-         <div className="pointer-events-auto w-full px-4 flex justify-center">
-             <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:p-2 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] max-w-full">
-                 
-                 {/* Section: Zoom */}
-                 <div className="flex items-center gap-1 flex-shrink-0">
-                    <ControlBtn icon={ZoomOut} label="Zoom Out" shortcut="-" onClick={handleZoomOut} disabled={scale <= 0.1} />
-                    
-                    <div className="relative group mx-1 flex-shrink-0">
-                        <input 
-                            type="text"
-                            value={zoomInput}
-                            onChange={handleZoomInputChange}
-                            onFocus={() => setIsEditingZoom(true)}
-                            onBlur={commitZoomInput}
-                            onKeyDown={handleZoomInputKeyDown}
-                            className="w-12 sm:w-16 bg-black/20 text-center text-xs font-mono font-bold text-white/90 focus:text-white rounded-lg py-2 border border-transparent focus:border-blue-500/50 outline-none transition-all focus:bg-black/40"
-                        />
-                        <span className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 pointer-events-none">%</span>
-                    </div>
-
-                    <ControlBtn icon={ZoomIn} label="Zoom In" shortcut="+" onClick={handleZoomIn} disabled={scale >= 10} />
-                 </div>
-
-                 <div className="w-px h-6 sm:h-8 bg-white/10 mx-1 flex-shrink-0"></div>
-
-                 {/* Section: Tools */}
-                 <div className="flex items-center gap-1 flex-shrink-0">
-                    <ControlBtn icon={RotateCw} label="Rotate" shortcut="R" onClick={handleRotate} />
-                    <ControlBtn icon={ArrowLeftRight} label="Fit Width" shortcut="W" onClick={handleFitWidth} />
-                    <ControlBtn icon={ArrowUpDown} label="Fit Height" shortcut="H" onClick={handleFitHeight} />
-                 </div>
-
-                 <div className="w-px h-6 sm:h-8 bg-white/10 mx-1 flex-shrink-0"></div>
-
-                 {/* Section: Reset */}
-                 <ControlBtn icon={Maximize} label="Reset View" shortcut="0" onClick={handleReset} />
-
-             </div>
+         {/* Toolbar */}
+         <div className="flex items-center gap-2 p-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl pointer-events-auto shadow-2xl">
+             <ControlBtn icon={ZoomOut} label="Zoom Out" onClick={handleZoomOut} disabled={scale <= 0.5} />
+             <ControlBtn icon={ZoomIn} label="Zoom In" onClick={handleZoomIn} disabled={scale >= 8} />
+             <div className="w-px h-6 bg-white/10 mx-1" />
+             <ControlBtn icon={RotateCw} label="Rotate" onClick={handleRotate} />
+             <ControlBtn icon={Maximize} label="Reset" onClick={handleReset} />
          </div>
       </div>
     </div>
