@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Modal } from '../ui/Modal';
 import { SearchDrawer } from '../dashboard/SearchDrawer';
+import { FileViewer } from '../../modules/viewer/FileViewer';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { Bell, Check, FileText, Moon, Sun, Monitor, Menu, X, ArrowLeft, Calendar, Info, AlertTriangle, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
@@ -23,7 +24,6 @@ export const DashboardLayout: React.FC = () => {
 
   // Modal State
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchDrawerOpen, setIsSearchDrawerOpen] = useState(false);
   
@@ -39,10 +39,8 @@ export const DashboardLayout: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const modalType = params.get('modal');
-    const fileId = params.get('fileId');
 
     setActiveModal(modalType);
-    setSelectedFileId(fileId);
     
     // Reset notification detail view when drawer closes
     if (modalType !== 'notifications') {
@@ -67,9 +65,6 @@ export const DashboardLayout: React.FC = () => {
       }
   });
 
-  // Note: Sidebar Navigation shortcuts are now handled within the Sidebar component itself
-  // to ensure they are tied to the rendering of the links.
-
   // Close Mobile Menu on route change automatically
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -82,8 +77,6 @@ export const DashboardLayout: React.FC = () => {
     params.delete('fileId');
     navigate(`${location.pathname}?${params.toString()}`);
   };
-
-  const selectedFile = files.find(f => f.id === selectedFileId);
 
   // Computed state for Notification Drawer
   const isNotificationsOpen = activeModal === 'notifications';
@@ -129,7 +122,7 @@ export const DashboardLayout: React.FC = () => {
                        </button>
                        <span className="font-bold text-lg text-slate-900 dark:text-white">CloudVault</span>
                    </div>
-                   {/* Mobile Profile Avatar (Optional shortcut) */}
+                   {/* Mobile Profile Avatar */}
                    {user && <img src={user.avatar} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" alt="User" />}
                </div>
                
@@ -149,18 +142,19 @@ export const DashboardLayout: React.FC = () => {
 
       {/* --- Global Overlays --- */}
 
-      {/* Search Drawer - Rendered at root to ensure highest Z-Index over Sidebar */}
+      {/* New File Preview System */}
+      <FileViewer />
+
+      {/* Search Drawer */}
       <SearchDrawer isOpen={isSearchDrawerOpen} onClose={() => setIsSearchDrawerOpen(false)} />
 
       {/* --- Notification Drawer (Right Side) --- */}
-      
-      {/* Backdrop */}
       <div 
         className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-opacity duration-300 ${isNotificationsOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={closeModal}
       />
       
-      {/* Slide-in Panel - Increased width to md:w-[600px] */}
+      {/* Slide-in Panel */}
       <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-white dark:bg-slate-900 shadow-2xl z-[70] transform transition-transform duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${isNotificationsOpen ? 'translate-x-0' : 'translate-x-full'} border-l border-slate-200 dark:border-slate-800 overflow-hidden`}>
          
          {/* Sliding Container (200% width) */}
@@ -168,10 +162,8 @@ export const DashboardLayout: React.FC = () => {
             className="flex w-[200%] h-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             style={{ transform: selectedNotification ? 'translateX(-50%)' : 'translateX(0)' }}
          >
-
-             {/* --- PANEL 1: LIST VIEW (50% width) --- */}
+             {/* PANEL 1: LIST VIEW (50% width) */}
              <div className="w-1/2 h-full flex flex-col border-r border-slate-100 dark:border-slate-800">
-                {/* Header */}
                 <div className="flex-none flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Notifications</h2>
@@ -186,8 +178,6 @@ export const DashboardLayout: React.FC = () => {
                         <X size={20} />
                     </button>
                 </div>
-
-                {/* Notification List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/30">
                     {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-500 pb-20">
@@ -207,7 +197,6 @@ export const DashboardLayout: React.FC = () => {
                                 className={`group relative p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-md hover:scale-[1.01] active:scale-[0.99] ${n.read ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800' : 'bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-900 shadow-sm'}`}
                             >
                                 {!n.read && <div className="absolute top-5 right-5 w-2 h-2 rounded-full bg-blue-500"></div>}
-                                
                                 <div className="flex items-start gap-4">
                                     <div className={`mt-1 p-2.5 rounded-xl flex-shrink-0 ${style.bg} ${style.color}`}>
                                         <Icon size={20} />
@@ -238,11 +227,10 @@ export const DashboardLayout: React.FC = () => {
                 </div>
              </div>
 
-             {/* --- PANEL 2: DETAIL VIEW (50% width) --- */}
+             {/* PANEL 2: DETAIL VIEW (50% width) */}
              <div className="w-1/2 h-full flex flex-col bg-white dark:bg-slate-900">
                 {selectedNotification ? (
                     <>
-                        {/* Detail Header */}
                         <div className="flex-none flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800">
                             <button 
                                 onClick={() => setSelectedNotification(null)}
@@ -252,10 +240,7 @@ export const DashboardLayout: React.FC = () => {
                             </button>
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Details</h3>
                         </div>
-
-                        {/* Detail Content */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {/* Hero Section */}
                             <div className={`px-8 py-10 ${getNotificationStyle(selectedNotification.type).bg} flex flex-col items-center justify-center text-center border-b ${getNotificationStyle(selectedNotification.type).border}`}>
                                  <div className={`p-4 bg-white dark:bg-slate-900 rounded-full shadow-sm mb-4 ${getNotificationStyle(selectedNotification.type).color}`}>
                                     {React.createElement(getNotificationStyle(selectedNotification.type).icon, { size: 40 })}
@@ -278,7 +263,6 @@ export const DashboardLayout: React.FC = () => {
                                         {selectedNotification.message}
                                     </p>
                                 </div>
-                                
                                 {selectedNotification.link && (
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between group cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors" onClick={() => navigate(selectedNotification.link!)}>
                                         <div className="flex items-center gap-3">
@@ -293,7 +277,6 @@ export const DashboardLayout: React.FC = () => {
                                         <ArrowLeft size={16} className="rotate-180 text-slate-400 group-hover:text-blue-500 transition-colors" />
                                     </div>
                                 )}
-
                                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-4">Actions</label>
                                     <div className="flex gap-3">
@@ -349,7 +332,6 @@ export const DashboardLayout: React.FC = () => {
                      </div>
                  </div>
 
-                 {/* Theme Toggle */}
                  <div className="w-full mb-6">
                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-3 uppercase tracking-wider">Appearance</h4>
                    <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
@@ -382,52 +364,6 @@ export const DashboardLayout: React.FC = () => {
                  </button>
              </div>
          )}
-      </Modal>
-
-      {/* 3. File Preview Modal */}
-      <Modal isOpen={activeModal === 'preview'} onClose={closeModal} title={selectedFile ? selectedFile.name : 'File Preview'}>
-        {selectedFile ? (
-            <div className="flex flex-col items-center">
-                <div className="w-full h-64 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center mb-6 overflow-hidden border border-slate-200 dark:border-slate-700 relative group">
-                    {/* Pattern background */}
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#64748b_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                    
-                    {selectedFile.type === 'IMAGE' ? (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 relative z-10 p-4">
-                             <img src={`https://picsum.photos/seed/${selectedFile.id}/800/600`} alt="Preview" className="max-w-full max-h-full object-contain shadow-lg rounded-lg" />
-                        </div>
-                    ) : (
-                        <FileText size={80} className="text-slate-400 dark:text-slate-600 relative z-10 drop-shadow-sm" />
-                    )}
-                </div>
-                
-                <div className="w-full grid grid-cols-2 gap-4 text-sm bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">File Type</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-200">{selectedFile.type}</p>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Size</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-200">{selectedFile.size} bytes</p>
-                    </div>
-                     <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Owner</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-200">{selectedFile.owner}</p>
-                    </div>
-                     <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Modified</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-200">{new Date(selectedFile.modifiedAt).toLocaleDateString()}</p>
-                    </div>
-                </div>
-
-                <div className="flex space-x-4 w-full mt-6">
-                    <button className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/25 font-bold transition-all transform hover:-translate-y-0.5">Download</button>
-                    <button className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 font-bold transition-colors">Share Link</button>
-                </div>
-            </div>
-        ) : (
-            <p>File not found.</p>
-        )}
       </Modal>
     </div>
   );

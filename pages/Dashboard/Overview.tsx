@@ -28,7 +28,9 @@ import {
   Activity,
   Download,
   ArrowRight,
-  Zap
+  Zap,
+  PlayCircle,
+  File as FileIcon
 } from 'lucide-react';
 
 // --- Local Components ---
@@ -85,11 +87,32 @@ export const Overview: React.FC = () => {
   // Get currently active storage item for display
   const activeStorageItem = activeStorageIndex !== undefined ? storageStats[activeStorageIndex] : null;
 
-  // Mock Data for UI
+  // --- Mock Data for Shared With You (10 Items) ---
   const recentShares = [
-      { id: 'rs1', name: 'Project Alpha.pdf', sharedBy: 'Sarah Jenkins', avatar: 'https://i.pravatar.cc/150?u=1', time: '5m ago' },
-      { id: 'rs2', name: 'Marketing Assets', sharedBy: 'Mike Ross', avatar: 'https://i.pravatar.cc/150?u=2', time: '1h ago' },
-      { id: 'rs3', name: 'Q4 Financials', sharedBy: 'Jessica P.', avatar: 'https://i.pravatar.cc/150?u=3', time: '3h ago' },
+      { id: 'rs1', name: 'Project Alpha.pdf', sharedBy: 'Sarah Jenkins', avatar: 'https://i.pravatar.cc/150?u=10', time: '5m ago', type: 'PDF' },
+      { id: 'rs2', name: 'Q3 Financials.xlsx', sharedBy: 'Mike Ross', avatar: 'https://i.pravatar.cc/150?u=12', time: '15m ago', type: 'XLS' },
+      { id: 'rs3', name: 'Logo_Final.png', sharedBy: 'Jessica Pearson', avatar: 'https://i.pravatar.cc/150?u=15', time: '1h ago', type: 'IMG' },
+      { id: 'rs4', name: 'Meeting_Notes.docx', sharedBy: 'Harvey Specter', avatar: 'https://i.pravatar.cc/150?u=20', time: '2h ago', type: 'DOC' },
+      { id: 'rs5', name: 'Team_Photo.jpg', sharedBy: 'Louis Litt', avatar: 'https://i.pravatar.cc/150?u=25', time: '3h ago', type: 'IMG' },
+      { id: 'rs6', name: 'Budget_2024.pdf', sharedBy: 'Donna Paulsen', avatar: 'https://i.pravatar.cc/150?u=30', time: '5h ago', type: 'PDF' },
+      { id: 'rs7', name: 'Campaign_Video.mp4', sharedBy: 'Rachel Zane', avatar: 'https://i.pravatar.cc/150?u=35', time: '1d ago', type: 'VID' },
+      { id: 'rs8', name: 'Website_Mockup.fig', sharedBy: 'Alex Williams', avatar: 'https://i.pravatar.cc/150?u=40', time: '1d ago', type: 'FIG' },
+      { id: 'rs9', name: 'Contract_v2.pdf', sharedBy: 'Katrina Bennett', avatar: 'https://i.pravatar.cc/150?u=45', time: '2d ago', type: 'PDF' },
+      { id: 'rs10', name: 'Presentation.pptx', sharedBy: 'Robert Zane', avatar: 'https://i.pravatar.cc/150?u=50', time: '3d ago', type: 'PPT' },
+  ];
+
+  // Colors for unique user backgrounds
+  const avatarColors = [
+    'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-800',
+    'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 ring-rose-200 dark:ring-rose-800',
+    'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 ring-amber-200 dark:ring-amber-800',
+    'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800',
+    'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 ring-cyan-200 dark:ring-cyan-800',
+    'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 ring-violet-200 dark:ring-violet-800',
+    'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-300 ring-fuchsia-200 dark:ring-fuchsia-800',
+    'bg-lime-100 dark:bg-lime-900/40 text-lime-600 dark:text-lime-300 ring-lime-200 dark:ring-lime-800',
+    'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 ring-sky-200 dark:ring-sky-800',
+    'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 ring-orange-200 dark:ring-orange-800',
   ];
 
   const getActionStyle = (action: string) => {
@@ -222,8 +245,8 @@ export const Overview: React.FC = () => {
         {/* Left Column (2/3) */}
         <div className="xl:col-span-2 space-y-8 min-w-0">
           
-          {/* Recent Shares Widget */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 relative overflow-hidden group/widget hover:shadow-lg transition-shadow duration-500">
+          {/* Recent Shares Widget - UPDATED: Fixed Grid Layout & Subtle Hover */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 relative overflow-hidden group/widget">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity duration-500 group-hover/widget:opacity-100 opacity-50"></div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10 gap-4">
@@ -238,7 +261,7 @@ export const Overview: React.FC = () => {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
                               </span>
-                              <p className="text-sm text-slate-500 font-medium">3 new files available</p>
+                              <p className="text-sm text-slate-500 font-medium">10 new files available</p>
                           </div>
                       </div>
                   </div>
@@ -248,63 +271,50 @@ export const Overview: React.FC = () => {
                   </Link>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
-                  {recentShares.map((share, index) => (
+              {/* Grid Container */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 relative z-10">
+                  {recentShares.map((share, index) => {
+                      const colorStyle = avatarColors[index % avatarColors.length];
+                      
+                      return (
                       <div key={share.id} 
-                           className="group relative flex items-center gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden min-h-[100px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer"
-                           style={{ animationDelay: `${index * 100}ms` }}
+                           className="group relative flex flex-col p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-800 cursor-pointer h-full"
                       >
-                          <div className={`
-                                absolute -right-6 -top-6 w-24 h-24 rounded-full
-                                bg-blue-600
-                                opacity-100
-                                blur-0
-                                group-hover:scale-[6] group-hover:blur-xl group-hover:opacity-10
-                                transition-all duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)]
-                          `}></div>
-
-                          <div className="relative flex-shrink-0 z-10">
-                             <div className="w-14 h-14 rounded-xl p-0.5 bg-slate-100 dark:bg-slate-800 transition-colors">
-                                <img 
-                                    src={share.avatar} 
-                                    alt={share.sharedBy} 
-                                    className="w-full h-full rounded-[10px] object-cover border-2 border-white dark:border-slate-900 transition-transform duration-500 group-hover:scale-110" 
-                                />
-                             </div>
-                             <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-0.5 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800">
-                                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                             </div>
+                          {/* Header Content */}
+                          <div className="flex justify-between items-start mb-3">
+                              <div className={`relative p-1 rounded-2xl ${colorStyle.split(' ')[0]}`}>
+                                 <div className={`w-10 h-10 rounded-xl p-0.5 bg-white/50 dark:bg-black/20 backdrop-blur-sm transition-colors overflow-hidden ring-1 ${colorStyle.split(' ring-')[1]}`}>
+                                    <img 
+                                        src={share.avatar} 
+                                        alt={share.sharedBy} 
+                                        className="w-full h-full rounded-[8px] object-cover" 
+                                    />
+                                 </div>
+                              </div>
+                              <div className="p-1.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-400 transition-colors">
+                                  {share.type === 'VID' ? <PlayCircle size={14} /> : <FileIcon size={14} />}
+                              </div>
                           </div>
 
-                          <div className="flex-1 min-w-0 z-10 flex flex-col justify-center h-full">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-0.5">
+                          <div className="space-y-0.5 mb-2 flex-1">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={share.name}>
                                 {share.name}
                               </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2">
-                                  by <span className="font-medium text-slate-700 dark:text-slate-300">{share.sharedBy}</span>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                  by <span className={`font-bold ${colorStyle.split(' ')[2]}`}>{share.sharedBy}</span>
                               </p>
-                              <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors">
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-50 dark:border-slate-800/50 mt-auto">
+                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                   {share.time}
                               </span>
-                          </div>
-
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <button className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-colors shadow-sm" title="Download">
-                                  <Download size={16} />
-                              </button>
-                              <button className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-colors shadow-sm" title="Options">
-                                  <MoreHorizontal size={16} />
-                              </button>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                   <Download size={12} className="text-slate-400 hover:text-blue-600" />
+                              </div>
                           </div>
                       </div>
-                  ))}
-
-                  <button className="group relative h-full min-h-[100px] rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-300 flex items-center justify-center gap-3">
-                      <div className="p-3 bg-white dark:bg-slate-800 rounded-full text-slate-400 group-hover:text-blue-500 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-blue-200 dark:group-hover:ring-blue-500/30 group-hover:scale-110 transition-all duration-300">
-                          <Plus size={24} strokeWidth={2.5} />
-                      </div>
-                      <span className="font-bold text-sm text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Share New</span>
-                  </button>
+                  )})}
               </div>
           </div>
 
@@ -314,20 +324,23 @@ export const Overview: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Files</h2>
             </div>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                     <Skeleton className="w-full aspect-[4/3]" />
-                     <div className="p-4 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {Array.from({length: 10}).map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden h-60">
+                     <Skeleton className="w-full h-32" />
+                     <div className="p-4 space-y-3">
                         <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
+                        <div className="flex justify-between">
+                            <Skeleton className="h-3 w-1/4" />
+                            <Skeleton className="h-3 w-1/4" />
+                        </div>
                      </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {files.slice(0, 8).map(file => <FileCard key={file.id} file={file} />)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {files.slice(0, 10).map(file => <FileCard key={file.id} file={file} />)}
               </div>
             )}
           </section>
