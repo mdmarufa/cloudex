@@ -5,7 +5,7 @@ import { FileItem, FileType } from '../../types';
 import { 
   X, ZoomIn, ZoomOut, Maximize, Download, ExternalLink, 
   Loader2, AlertCircle, RotateCw, ArrowLeftRight, ArrowUpDown, 
-  ChevronLeft, ChevronRight, FileImage, Info
+  ChevronLeft, ChevronRight, FileImage, MoreVertical
 } from 'lucide-react';
 import { FORMAT_BYTES } from '../../constants';
 
@@ -24,10 +24,12 @@ interface ControlBtnProps {
   disabled?: boolean;
   variant?: 'default' | 'danger' | 'primary';
   active?: boolean;
+  tooltipPlacement?: 'top' | 'bottom';
+  className?: string;
 }
 
 const ControlBtn: React.FC<ControlBtnProps> = ({ 
-  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false 
+  icon: Icon, label, onClick, shortcut, disabled = false, variant = 'default', active = false, tooltipPlacement = 'top', className = ''
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -41,8 +43,17 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
 
   const activeStyles = active ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : '';
 
+  // Tooltip positioning logic
+  const tooltipPosClass = tooltipPlacement === 'top' 
+    ? 'bottom-full mb-3 origin-bottom' 
+    : 'top-full mt-3 origin-top';
+    
+  const arrowPosClass = tooltipPlacement === 'top'
+    ? 'top-full border-t-slate-900/95 border-b-transparent border-x-transparent'
+    : 'bottom-full border-b-slate-900/95 border-t-transparent border-x-transparent';
+
   return (
-    <div className="relative group flex items-center justify-center flex-shrink-0">
+    <div className={`relative group flex items-center justify-center flex-shrink-0 ${className}`}>
       <button 
         onClick={onClick}
         disabled={disabled}
@@ -63,11 +74,13 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
 
       {/* Premium Tooltip */}
       <div className={`
-          absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-1.5 
+          absolute ${tooltipPosClass} left-1/2 -translate-x-1/2 px-3 py-1.5 
           bg-slate-900/95 backdrop-blur-xl text-white text-xs font-medium rounded-lg 
           shadow-xl border border-white/10 whitespace-nowrap pointer-events-none z-[60]
-          transition-all duration-200 origin-bottom
-          ${showTooltip ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'}
+          transition-all duration-200
+          ${showTooltip ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
+          ${tooltipPlacement === 'top' && !showTooltip ? 'translate-y-2' : ''}
+          ${tooltipPlacement === 'bottom' && !showTooltip ? '-translate-y-2' : ''}
       `}>
          <div className="flex items-center gap-2">
             <span>{label}</span>
@@ -78,7 +91,7 @@ const ControlBtn: React.FC<ControlBtnProps> = ({
             )}
          </div>
          {/* Arrow */}
-         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+         <div className={`absolute left-1/2 -translate-x-1/2 -mt-[1px] border-4 ${arrowPosClass}`}></div>
       </div>
     </div>
   );
@@ -95,6 +108,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Zoom Input State
   const [zoomInput, setZoomInput] = useState('100');
@@ -109,6 +123,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const imageRef = useRef<HTMLImageElement>(null);
   const activeThumbRef = useRef<HTMLDivElement>(null);
   const filmstripRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // --- Image List Logic (Filmstrip) ---
   const allImages = useMemo(() => files.filter(f => f.type === FileType.IMAGE), [files]);
@@ -123,6 +138,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
     setPosition({ x: 0, y: 0 });
     setIsLoading(true);
     setHasError(false);
+    setIsMobileMenuOpen(false);
   }, [file.id]);
 
   // Scroll active thumbnail into view
@@ -135,6 +151,19 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
         });
     }
   }, [file.id]);
+
+  // Close Mobile Menu on Click Outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   // --- Sync Input with Scale ---
   useEffect(() => {
@@ -347,40 +376,79 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800/20 via-slate-900/50 to-black pointer-events-none z-0"></div>
 
       {/* Top Bar: Info & Close */}
-      <div className="absolute top-0 inset-x-0 z-50 flex items-start justify-between p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 hover:opacity-100">
-        <div className="flex items-center gap-4 pointer-events-auto">
+      <div className="absolute top-0 inset-x-0 z-50 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 hover:opacity-100">
+        
+        {/* Left: Title & Info - Constrained Width to prevent overflow */}
+        <div className="flex items-center gap-3 sm:gap-4 pointer-events-auto flex-1 min-w-0 pr-4">
              {/* File Type Icon Badge */}
-             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-lg">
+             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg">
                 <FileImage className="text-blue-400" size={20} />
              </div>
-             <div className="flex flex-col text-white drop-shadow-md">
-                <h3 className="text-base font-bold truncate max-w-[200px] sm:max-w-md leading-tight">{file.name}</h3>
-                <div className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+             <div className="flex flex-col text-white drop-shadow-md min-w-0">
+                <h3 className="text-sm sm:text-base font-bold truncate leading-tight" title={file.name}>{file.name}</h3>
+                <div className="flex items-center gap-2 text-xs text-slate-300 font-medium mt-0.5">
                     <span className="bg-white/10 px-1.5 py-0.5 rounded">{FORMAT_BYTES(file.size)}</span>
-                    <span>•</span>
-                    <span>{new Date(file.modifiedAt).toLocaleDateString()}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">{new Date(file.modifiedAt).toLocaleDateString()}</span>
                 </div>
             </div>
         </div>
         
-        <div className="flex items-center gap-2 pointer-events-auto">
-             <ControlBtn 
-                icon={ExternalLink} 
-                label="Open Original" 
-                onClick={() => window.open(imageUrl, '_blank')} 
-             />
-             <ControlBtn 
-                icon={Download} 
-                label="Download" 
-                onClick={() => {}} 
-             />
-             <div className="w-px h-6 bg-white/10 mx-1"></div>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 pointer-events-auto flex-shrink-0">
+             
+             {/* Desktop Actions */}
+             <div className="hidden md:flex items-center gap-2">
+                <ControlBtn 
+                   icon={ExternalLink} 
+                   label="Open Original" 
+                   onClick={() => window.open(imageUrl, '_blank')}
+                   tooltipPlacement="bottom" 
+                />
+                <ControlBtn 
+                   icon={Download} 
+                   label="Download" 
+                   onClick={() => {}} 
+                   tooltipPlacement="bottom"
+                />
+                <div className="w-px h-6 bg-white/10 mx-1"></div>
+             </div>
+
+             {/* Mobile Actions Menu */}
+             <div className="md:hidden relative" ref={menuRef}>
+                 <ControlBtn 
+                    icon={MoreVertical} 
+                    label="Options" 
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    active={isMobileMenuOpen}
+                    tooltipPlacement="bottom"
+                 />
+                 {isMobileMenuOpen && (
+                     <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 origin-top-right">
+                         <button 
+                             onClick={() => window.open(imageUrl, '_blank')}
+                             className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"
+                         >
+                             <ExternalLink size={16} /> Open Original
+                         </button>
+                         <button 
+                             onClick={() => {}}
+                             className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"
+                         >
+                             <Download size={16} /> Download
+                         </button>
+                     </div>
+                 )}
+             </div>
+
+             {/* Close Button (Always Visible) */}
              <ControlBtn 
                 icon={X} 
                 label="Close" 
                 shortcut="Esc"
                 onClick={onClose}
-                variant="danger" 
+                variant="danger"
+                tooltipPlacement="bottom"
              />
         </div>
       </div>
@@ -456,8 +524,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                 `}
                 style={{
                     transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
-                    // Initial constraints to ensure it starts reasonably sized, but we rely on scale for "Fit"
-                    // Removing strict vh/vw here to allow "Fit" logic to work purely with scale
+                    // Initial constraints to ensure it starts reasonably sized
                     maxHeight: '85vh',
                     maxWidth: '90vw',
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
