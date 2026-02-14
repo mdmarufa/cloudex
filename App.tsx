@@ -3,7 +3,12 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { Overview } from './pages/Dashboard/Overview';
 import { FilesPage } from './pages/Dashboard/Files';
+import { SharedPage } from './pages/Dashboard/Shared';
+import { AssetsPage } from './pages/Dashboard/Assets';
+import { FileManagerPage } from './pages/Dashboard/FileManager';
 import { SettingsPage } from './pages/Dashboard/Settings';
+import { StoragePage } from './pages/Dashboard/Storage';
+import { MessagesPage } from './pages/Dashboard/Messages';
 import { ThemeProvider } from './context/ThemeContext';
 
 const App: React.FC = () => {
@@ -16,9 +21,14 @@ const App: React.FC = () => {
           {/* Main Dashboard Route with Nested Children */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route path="overview" element={<Overview />} />
+            <Route path="file-manager" element={<FileManagerPage />} />
             <Route path="files" element={<FilesPage />} />
+            <Route path="shared" element={<SharedPage />} />
+            <Route path="assets" element={<AssetsPage />} />
             <Route path="recent" element={<FilesPage />} /> {/* Reusing FilesPage for simplicity */}
             <Route path="starred" element={<FilesPage />} /> {/* Reusing FilesPage for simplicity */}
+            <Route path="storage" element={<StoragePage />} />
+            <Route path="messages" element={<MessagesPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           

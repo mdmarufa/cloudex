@@ -13,7 +13,9 @@ import {
   Plus,
   Minus,
   Settings,
-  Cloud
+  Cloud,
+  Database,
+  HardDrive
 } from 'lucide-react';
 
 // --- Types ---
@@ -197,6 +199,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   const menuItems: NavItem[] = [
     { id: 'overview', label: 'Home', icon: LayoutGrid, path: '/dashboard/overview', shortcut: 'Alt+H' },
+    { id: 'filemanager', label: 'File Manager', icon: HardDrive, path: '/dashboard/file-manager', shortcut: 'Alt+E' },
+    { id: 'storage', label: 'Storage', icon: Database, path: '/dashboard/storage', shortcut: 'Alt+D' },
     { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/dashboard/messages', badge: 2, shortcut: 'Alt+M' },
     { id: 'integrations', label: 'Integrations', icon: Puzzle, path: '/dashboard/integrations', actionIcon: Plus },
     { id: 'finance', label: 'Finance', icon: CreditCard, path: '/dashboard/settings', shortcut: 'Alt+S' },
