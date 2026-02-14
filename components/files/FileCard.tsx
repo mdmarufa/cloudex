@@ -111,10 +111,11 @@ export const FileCard: React.FC<Props> = ({ file, onRename, onDelete }) => {
   // --- Render Preview Area ---
   const renderPreview = () => {
     if (file.type === FileType.IMAGE) {
+      const imgSrc = file.url || `https://picsum.photos/seed/${file.id}/400/300`;
       return (
         <div className="w-full h-full relative group-hover:scale-105 transition-transform duration-700 ease-out">
           <img 
-            src={`https://picsum.photos/seed/${file.id}/400/300`} 
+            src={imgSrc}
             alt={file.name}
             className="w-full h-full object-cover"
             loading="lazy"
@@ -127,11 +128,20 @@ export const FileCard: React.FC<Props> = ({ file, onRename, onDelete }) => {
     if (file.type === FileType.VIDEO) {
        return (
         <div className="w-full h-full relative group-hover:scale-105 transition-transform duration-700 ease-out bg-slate-900">
-           <img 
-            src={`https://picsum.photos/seed/${file.id}/400/300?grayscale`} 
-            alt={file.name}
-            className="w-full h-full object-cover opacity-80"
-          />
+           {/* If local video blob exists, use video tag to show first frame (metadata) */}
+           {file.url ? (
+               <video 
+                   src={file.url} 
+                   className="w-full h-full object-cover opacity-80"
+                   preload="metadata"
+               />
+           ) : (
+               <img 
+                src={`https://picsum.photos/seed/${file.id}/400/300?grayscale`} 
+                alt={file.name}
+                className="w-full h-full object-cover opacity-80"
+              />
+           )}
           <div className="absolute inset-0 flex items-center justify-center">
              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/50 group-hover:scale-110 transition-transform duration-300">
                 <Play size={20} fill="white" className="text-white ml-1" />

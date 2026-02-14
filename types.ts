@@ -1,3 +1,4 @@
+
 export enum FileType {
   IMAGE = 'IMAGE',
   DOCUMENT = 'DOCUMENT',
@@ -16,6 +17,7 @@ export interface FileItem {
   owner: string;
   isStarred: boolean;
   thumbnail?: string;
+  url?: string; // Added for Blob URLs or real file paths
   path: string;
 }
 

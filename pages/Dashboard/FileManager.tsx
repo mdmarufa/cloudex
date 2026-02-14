@@ -378,6 +378,13 @@ export const FileManagerPage: React.FC = () => {
         else if (['mp3', 'wav', 'ogg'].includes(ext)) type = FileType.AUDIO;
         else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) type = FileType.ARCHIVE;
 
+        // Create Blob URL for preview for supported types
+        let url: string | undefined = undefined;
+        // Generate blob for Image, Video, Audio, and PDF
+        if (type === FileType.IMAGE || type === FileType.VIDEO || type === FileType.AUDIO || (type === FileType.DOCUMENT && ext === 'pdf')) {
+            url = URL.createObjectURL(file);
+        }
+
         return {
             id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: file.name,
@@ -386,7 +393,8 @@ export const FileManagerPage: React.FC = () => {
             modifiedAt: new Date().toISOString(),
             owner: 'Me',
             isStarred: false,
-            path: currentPath
+            path: currentPath,
+            url: url // Store the object URL
         };
     });
 
@@ -510,7 +518,7 @@ export const FileManagerPage: React.FC = () => {
                   </button>
                   <button 
                     onClick={() => { setModalMode('create'); setInputValue(''); }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-50 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                   >
                       <FolderPlus size={18} />
                       <span className="hidden sm:inline">New Folder</span>

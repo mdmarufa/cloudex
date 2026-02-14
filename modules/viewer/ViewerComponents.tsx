@@ -53,15 +53,16 @@ export const ViewerLayout: React.FC<ViewerLayoutProps> = ({ file, onClose, child
 // --- Specific Viewers ---
 
 export const VideoViewer: React.FC<{ file: FileItem; onClose: () => void }> = ({ file, onClose }) => {
+  const videoSrc = file.url || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  
   return (
     <ViewerLayout file={file} onClose={onClose} icon={Video}>
         <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 relative group">
-            {/* Mock Video Player */}
             <video 
                 className="w-full h-full object-contain" 
                 controls 
                 autoPlay 
-                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+                src={videoSrc}
             />
         </div>
     </ViewerLayout>
@@ -69,6 +70,8 @@ export const VideoViewer: React.FC<{ file: FileItem; onClose: () => void }> = ({
 };
 
 export const AudioViewer: React.FC<{ file: FileItem; onClose: () => void }> = ({ file, onClose }) => {
+  const audioSrc = file.url || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+
   return (
     <ViewerLayout file={file} onClose={onClose} icon={Music}>
         <div className="w-full max-w-md bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-3xl flex flex-col items-center shadow-2xl">
@@ -78,26 +81,39 @@ export const AudioViewer: React.FC<{ file: FileItem; onClose: () => void }> = ({
             <h3 className="text-xl font-bold text-white mb-1 text-center">{file.name}</h3>
             <p className="text-slate-400 text-sm mb-8">Unknown Artist</p>
             
-            <audio className="w-full" controls src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" />
+            <audio className="w-full" controls src={audioSrc} />
         </div>
     </ViewerLayout>
   );
 };
 
 export const PDFViewer: React.FC<{ file: FileItem; onClose: () => void }> = ({ file, onClose }) => {
+  // Check if it's a blob URL (uploaded) or a mock URL/path
+  const isBlob = file.url?.startsWith('blob:');
+  
   return (
     <ViewerLayout file={file} onClose={onClose} icon={FileText}>
         <div className="w-full h-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
             <div className="h-full w-full bg-slate-100 flex items-center justify-center relative">
-                 {/* Simulated PDF Iframe */}
-                 <iframe 
-                    src={`https://docs.google.com/gview?embedded=true&url=https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`}
-                    className="w-full h-full border-none"
-                    title="PDF Viewer"
-                 />
-                 <div className="absolute bottom-4 right-6 pointer-events-none">
-                     <span className="bg-black/70 text-white text-xs px-2 py-1 rounded">Page 1 / 5</span>
-                 </div>
+                 {isBlob ? (
+                     <iframe 
+                        src={file.url}
+                        className="w-full h-full border-none"
+                        title="PDF Viewer"
+                     />
+                 ) : (
+                     /* Simulated PDF Iframe for mock data using Google Viewer */
+                     <iframe 
+                        src={`https://docs.google.com/gview?embedded=true&url=https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`}
+                        className="w-full h-full border-none"
+                        title="PDF Viewer"
+                     />
+                 )}
+                 {!isBlob && (
+                    <div className="absolute bottom-4 right-6 pointer-events-none">
+                        <span className="bg-black/70 text-white text-xs px-2 py-1 rounded">Page 1 / 5</span>
+                    </div>
+                 )}
             </div>
         </div>
     </ViewerLayout>

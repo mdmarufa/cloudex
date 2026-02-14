@@ -95,7 +95,10 @@ interface ImageSlideProps {
 const ImageSlide: React.FC<ImageSlideProps> = ({ file, isCached, onLoaded, className, style, dragRef }) => {
     // Initial state logic: if cached, assume loaded immediately.
     const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(isCached ? 'loaded' : 'loading');
-    const imageUrl = `https://picsum.photos/seed/${file.id}/1920/1080`;
+    
+    // Prefer the real file URL (uploaded), fallback to picsum (mock)
+    const imageUrl = file.url || `https://picsum.photos/seed/${file.id}/1920/1080`;
+    
     const internalRef = useRef<HTMLImageElement>(null);
 
     // Double check: if browser has it cached but our state is out of sync
@@ -189,7 +192,14 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   const menuRef = useRef<HTMLDivElement>(null);
   const animationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const allImages = useMemo(() => files.filter(f => f.type === FileType.IMAGE), [files]);
+  // --- Scoped Image Logic ---
+  // Filter images only from the SAME FOLDER as the current active file
+  const allImages = useMemo(() => {
+      // Find the parent folder of the current file
+      const parentPath = activeFile.path;
+      return files.filter(f => f.type === FileType.IMAGE && f.path === parentPath);
+  }, [files, activeFile.path]);
+
   const currentIndex = allImages.findIndex(f => f.id === activeFile.id);
   const hasNext = currentIndex < allImages.length - 1;
   const hasPrev = currentIndex > 0;
@@ -198,6 +208,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
   useEffect(() => {
     if (file.id !== activeFile.id) {
         // Determine Direction
+        // Note: We use the *current* allImages context to find direction relative to the list
+        // If switching folders entirely via URL, this might be arbitrary, but usually fine.
         const newIndex = allImages.findIndex(f => f.id === file.id);
         const oldIndex = allImages.findIndex(f => f.id === activeFile.id);
         const dir = newIndex > oldIndex ? 'next' : 'prev';
@@ -360,6 +372,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
       transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0, 0.4, 1)' 
   };
 
+  const downloadUrl = activeFile.url || `https://picsum.photos/seed/${activeFile.id}/1920/1080`;
+
   return (
     <div 
       className="relative w-full h-full flex flex-col bg-transparent select-none overflow-hidden touch-none"
@@ -381,12 +395,14 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                     <span className="bg-white/10 px-1.5 py-0.5 rounded">{FORMAT_BYTES(activeFile.size)}</span>
                     <span className="hidden sm:inline">•</span>
                     <span className="hidden sm:inline">{new Date(activeFile.modifiedAt).toLocaleDateString()}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="text-slate-400 italic truncate max-w-[100px]">{activeFile.path === '/' ? 'Root' : activeFile.path}</span>
                 </div>
             </div>
         </div>
         <div className="flex items-center gap-2 pointer-events-auto flex-shrink-0">
              <div className="hidden md:flex items-center gap-2">
-                <ControlBtn icon={ExternalLink} label="Open Original" onClick={() => window.open(`https://picsum.photos/seed/${activeFile.id}/1920/1080`, '_blank')} tooltipPlacement="bottom" />
+                <ControlBtn icon={ExternalLink} label="Open Original" onClick={() => window.open(downloadUrl, '_blank')} tooltipPlacement="bottom" />
                 <ControlBtn icon={Download} label="Download" onClick={() => {}} tooltipPlacement="bottom" />
                 <div className="w-px h-6 bg-white/10 mx-1"></div>
              </div>
@@ -394,7 +410,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
                  <ControlBtn icon={MoreVertical} label="Options" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} active={isMobileMenuOpen} tooltipPlacement="bottom" tooltipAlign="right" />
                  {isMobileMenuOpen && (
                      <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 origin-top-right">
-                         <button onClick={() => window.open(`https://picsum.photos/seed/${activeFile.id}/1920/1080`, '_blank')} className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"><ExternalLink size={16} /> Open Original</button>
+                         <button onClick={() => window.open(downloadUrl, '_blank')} className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"><ExternalLink size={16} /> Open Original</button>
                          <button onClick={() => {}} className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-white/10 flex items-center gap-3"><Download size={16} /> Download</button>
                      </div>
                  )}
@@ -456,7 +472,12 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose, onNavigate }) 
             >
                 {allImages.map((img) => (
                     <div key={img.id} ref={img.id === activeFile.id ? activeThumbRef : null} onClick={(e) => { e.stopPropagation(); onNavigate(img.id); }} className={`relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group ${img.id === activeFile.id ? 'opacity-100 scale-105 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20' : 'opacity-50 hover:opacity-100 hover:scale-105 hover:ring-2 hover:ring-white/20'}`}>
-                        <img src={`https://picsum.photos/seed/${img.id}/100/100`} alt={img.name} className="w-full h-full object-cover transform transition-transform group-hover:scale-110" loading="lazy" />
+                        <img 
+                            src={img.url || `https://picsum.photos/seed/${img.id}/100/100`} 
+                            alt={img.name} 
+                            className="w-full h-full object-cover transform transition-transform group-hover:scale-110" 
+                            loading="lazy" 
+                        />
                     </div>
                 ))}
             </div>
