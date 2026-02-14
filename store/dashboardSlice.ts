@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { MOCK_USER, MOCK_FILES, MOCK_NOTIFICATIONS, MOCK_ACTIVITY, STORAGE_DATA } from '../constants';
-import { User, FileItem, Notification, ActivityLog, StorageStat } from '../types';
+import { User, FileItem, Notification, ActivityLog, StorageStat, FileType } from '../types';
 
 interface DashboardState {
   user: User | null;
@@ -52,11 +52,62 @@ const dashboardSlice = createSlice({
       if (notif) notif.read = true;
     },
     deleteFile(state, action: PayloadAction<string>) {
-        state.files = state.files.filter(f => f.id !== action.payload);
+        const fileId = action.payload;
+        const fileToDelete = state.files.find(f => f.id === fileId);
+        
+        if (fileToDelete) {
+            if (fileToDelete.type === FileType.FOLDER) {
+                // Construct the full path of the folder to delete children
+                const folderPath = fileToDelete.path === '/' 
+                    ? `/${fileToDelete.name}` 
+                    : `${fileToDelete.path}/${fileToDelete.name}`;
+                
+                // Remove the folder AND any files that exist within its path
+                state.files = state.files.filter(f => 
+                    f.id !== fileId && !f.path.startsWith(folderPath)
+                );
+            } else {
+                state.files = state.files.filter(f => f.id !== fileId);
+            }
+        }
     },
     toggleStar(state, action: PayloadAction<string>) {
         const file = state.files.find(f => f.id === action.payload);
         if (file) file.isStarred = !file.isStarred;
+    },
+    createFolder(state, action: PayloadAction<{ name: string; path: string }>) {
+        const newFolder: FileItem = {
+            id: `folder-${Date.now()}`,
+            name: action.payload.name,
+            type: FileType.FOLDER,
+            size: 0,
+            modifiedAt: new Date().toISOString(),
+            owner: 'Me',
+            isStarred: false,
+            path: action.payload.path
+        };
+        state.files.push(newFolder);
+    },
+    renameItem(state, action: PayloadAction<{ id: string; newName: string }>) {
+        const item = state.files.find(f => f.id === action.payload.id);
+        if (item) {
+            const oldName = item.name;
+            const oldPathFull = item.path === '/' ? `/${oldName}` : `${item.path}/${oldName}`;
+            
+            // 1. Rename the item
+            item.name = action.payload.newName;
+
+            // 2. If it's a folder, we must update the 'path' of all children
+            if (item.type === FileType.FOLDER) {
+                const newPathFull = item.path === '/' ? `/${action.payload.newName}` : `${item.path}/${action.payload.newName}`;
+                
+                state.files.forEach(f => {
+                    if (f.path.startsWith(oldPathFull)) {
+                        f.path = f.path.replace(oldPathFull, newPathFull);
+                    }
+                });
+            }
+        }
     }
   },
   extraReducers: (builder) => {
@@ -75,5 +126,5 @@ const dashboardSlice = createSlice({
   },
 });
 
-export const { setSearchQuery, markNotificationRead, deleteFile, toggleStar } = dashboardSlice.actions;
+export const { setSearchQuery, markNotificationRead, deleteFile, toggleStar, createFolder, renameItem } = dashboardSlice.actions;
 export default dashboardSlice.reducer;
