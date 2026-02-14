@@ -88,6 +88,9 @@ const dashboardSlice = createSlice({
         };
         state.files.push(newFolder);
     },
+    addFiles(state, action: PayloadAction<FileItem[]>) {
+        state.files.push(...action.payload);
+    },
     renameItem(state, action: PayloadAction<{ id: string; newName: string }>) {
         const item = state.files.find(f => f.id === action.payload.id);
         if (item) {
@@ -126,5 +129,5 @@ const dashboardSlice = createSlice({
   },
 });
 
-export const { setSearchQuery, markNotificationRead, deleteFile, toggleStar, createFolder, renameItem } = dashboardSlice.actions;
+export const { setSearchQuery, markNotificationRead, deleteFile, toggleStar, createFolder, renameItem, addFiles } = dashboardSlice.actions;
 export default dashboardSlice.reducer;

@@ -3,7 +3,7 @@ import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { FileItem } from '../../types';
-import { SUPPORTED_IMAGE_EXTENSIONS } from './viewer.types';
+import { getFileCategory, FileCategory } from './viewer.types';
 
 export const useFileViewer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,8 +13,7 @@ export const useFileViewer = () => {
   
   const [activeFile, setActiveFile] = useState<FileItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [fileType, setFileType] = useState<string | null>(null);
-  const [isSupportedImage, setIsSupportedImage] = useState(false);
+  const [fileCategory, setFileCategory] = useState<FileCategory>('unknown');
   const [fileNotFound, setFileNotFound] = useState(false);
 
   useEffect(() => {
@@ -28,11 +27,7 @@ export const useFileViewer = () => {
       if (foundFile) {
         setActiveFile(foundFile);
         setFileNotFound(false);
-        
-        // Determine extension
-        const extension = foundFile.name.split('.').pop()?.toLowerCase() || '';
-        setFileType(extension);
-        setIsSupportedImage(SUPPORTED_IMAGE_EXTENSIONS.includes(extension));
+        setFileCategory(getFileCategory(foundFile.name));
         
         // Lock body scroll
         document.body.style.overflow = 'hidden';
@@ -65,14 +60,13 @@ export const useFileViewer = () => {
       const newParams = new URLSearchParams(location.search);
       newParams.set('modal', 'preview');
       newParams.set('fileId', fileId);
-      navigate(`${location.pathname}?${newParams.toString()}`);
+      navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
   };
 
   return {
     isOpen,
     activeFile,
-    fileType,
-    isSupportedImage,
+    fileCategory,
     fileNotFound,
     closeViewer,
     navigateToFile
